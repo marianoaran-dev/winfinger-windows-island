@@ -46,6 +46,8 @@ public partial class IslandWindow : Window
     private bool _dragArmed;
     private System.Windows.Point _dragStartScreen;
     private double _dragStartLeft;
+    private double _dragStartTop;
+    private double? _preExpandTop; // set when the window is shifted up to fit the expanded panel
 
     public IslandWindow(AppViewModel model)
     {
@@ -268,19 +270,21 @@ public partial class IslandWindow : Window
     {
         var position = e.GetPosition(IslandBorder);
 
-        // horizontal drag
+        // free drag: the island floats anywhere on screen
         if (_dragArmed && e.LeftButton == MouseButtonState.Pressed)
         {
             var screen = IslandBorder.PointToScreen(position);
             double deltaX = screen.X - _dragStartScreen.X;
-            if (!_dragging && Math.Abs(deltaX) > 4) _dragging = true;
+            double deltaY = screen.Y - _dragStartScreen.Y;
+            if (!_dragging && (Math.Abs(deltaX) > 4 || Math.Abs(deltaY) > 4)) _dragging = true;
             if (_dragging)
             {
                 // PointToScreen returns device px; convert delta to DIP
                 var source = PresentationSource.FromVisual(this);
                 double scale = source?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
                 Left = _dragStartLeft + deltaX / scale;
-                ClampLeft();
+                Top = _dragStartTop + deltaY / scale;
+                ClampPosition();
                 CaptureGlass();
             }
         }
@@ -349,19 +353,22 @@ public partial class IslandWindow : Window
     private void PositionAtTopCenter()
     {
         Left = CenteredLeft() + _model.SettingsStore.Settings.IslandOffsetX;
-        Top = 0;
-        ClampLeft();
+        Top = _model.SettingsStore.Settings.IslandOffsetY;
+        ClampPosition();
     }
 
     private double CenteredLeft() => (SystemParameters.PrimaryScreenWidth - Width) / 2;
 
-    private void ClampLeft()
+    private void ClampPosition()
     {
-        // keep the visible island (centered inside the stage window) on screen
+        // keep the visible island (top-centered inside the stage window) on screen
         double islandHalf = Math.Max(IslandBorder.ActualWidth, CompactWidth) / 2;
-        double min = 8 - (Width / 2 - islandHalf);
-        double max = SystemParameters.PrimaryScreenWidth - 8 - (Width / 2 + islandHalf);
-        Left = Math.Clamp(Left, min, max);
+        double minX = 8 - (Width / 2 - islandHalf);
+        double maxX = SystemParameters.PrimaryScreenWidth - 8 - (Width / 2 + islandHalf);
+        Left = Math.Clamp(Left, minX, maxX);
+        // island sits 8 DIP below the stage top; keep the compact pill fully visible
+        double maxY = SystemParameters.PrimaryScreenHeight - CompactHeight - 16;
+        Top = Math.Clamp(Top, -8, maxY);
     }
 
     // ── Click vs horizontal drag ──
@@ -373,6 +380,7 @@ public partial class IslandWindow : Window
         _dragging = false;
         _dragStartScreen = IslandBorder.PointToScreen(e.GetPosition(IslandBorder));
         _dragStartLeft = Left;
+        _dragStartTop = Top;
         IslandBorder.CaptureMouse();
     }
 
@@ -386,6 +394,7 @@ public partial class IslandWindow : Window
             {
                 _dragging = false;
                 _model.SettingsStore.Settings.IslandOffsetX = Left - CenteredLeft();
+                _model.SettingsStore.Settings.IslandOffsetY = Top;
                 _model.SettingsStore.Save();
                 return; // a drag is not a click
             }
@@ -500,6 +509,14 @@ public partial class IslandWindow : Window
         Activate();
         Focus();
 
+        // dragged low on screen: shift up so the expanded panel fits, restore on collapse
+        double needed = 8 + ExpandedHeight + 12;
+        if (Top + needed > SystemParameters.PrimaryScreenHeight)
+        {
+            _preExpandTop = Top;
+            Top = SystemParameters.PrimaryScreenHeight - needed;
+        }
+
         AnimateIsland(toWidth: ExpandedWidth, toHeight: ExpandedHeight, toRadius: ExpandedRadius,
             duration: TimeSpan.FromMilliseconds(280),
             easing: new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.32 });
@@ -523,6 +540,11 @@ public partial class IslandWindow : Window
     {
         RemoveMouseHook();
         SetNoActivate(true);
+        if (_preExpandTop is { } restore)
+        {
+            _preExpandTop = null;
+            Top = restore;
+        }
 
         // release the expanded panel's garbage once the animation settles
         var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
