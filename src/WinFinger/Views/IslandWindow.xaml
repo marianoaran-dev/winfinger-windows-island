@@ -66,6 +66,7 @@
 
                 <views:CompactIslandView x:Name="CompactView"/>
                 <views:MediaActivityView x:Name="MediaActivityView" Opacity="0" Visibility="Collapsed"/>
+                <views:ClipboardActivityView x:Name="ClipboardActivityView" Opacity="0" Visibility="Collapsed"/>
                 <views:ExpandedPanelView x:Name="ExpandedView" Opacity="0" Visibility="Collapsed"/>
 
                 <Grid x:Name="NotificationView" Opacity="0" Visibility="Collapsed">
