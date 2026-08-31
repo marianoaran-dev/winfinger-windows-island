@@ -127,7 +127,7 @@ public partial class AppearanceWindow : Window
             Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp",
             Title = "选择岛背景图片"
         };
-        if (dlg.ShowDialog() != true) return;
+        if (dlg.ShowDialog(this) != true) return;
         S.BackgroundImagePath = dlg.FileName;
         ImagePathText.Text = dlg.FileName;
         if (ModeImage.IsChecked != true) { ModeImage.IsChecked = true; return; } // OnModeChanged saves

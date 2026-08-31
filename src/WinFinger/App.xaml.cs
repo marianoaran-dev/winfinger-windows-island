@@ -19,6 +19,13 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        DispatcherUnhandledException += (_, args) =>
+        {
+            LogCrash(args.Exception);
+            args.Handled = true; // an appearance/menu mishap must never take the island down
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, args) => LogCrash(args.ExceptionObject as Exception);
+
         _singleInstanceMutex = new Mutex(true, @"Global\WinFinger.SingleInstance", out _ownsMutex);
         if (!_ownsMutex)
         {
@@ -34,6 +41,26 @@ public partial class App : Application
         _islandWindow.Show();
 
         CreateTrayIcon();
+
+        // repro hook: WINFINGER_PICKTEST=1 fires the tray 选择图片 flow 3s after startup
+        if (Environment.GetEnvironmentVariable("WINFINGER_PICKTEST") == "1")
+        {
+            var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+            t.Tick += (_, _) => { t.Stop(); PickBackgroundImage(); };
+            t.Start();
+        }
+        if (Environment.GetEnvironmentVariable("WINFINGER_PICKTEST") == "2")
+        {
+            var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+            t.Tick += (_, _) =>
+            {
+                t.Stop();
+                Model.SettingsStore.Settings.BackgroundImagePath =
+                    Environment.GetEnvironmentVariable("WINFINGER_PICKTEST_FILE") ?? "";
+                SetBackground("image", null);
+            };
+            t.Start();
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -41,8 +68,8 @@ public partial class App : Application
         _trayIcon?.Dispose();
         if (_ownsMutex)
         {
-            Model.Stop();
-            _singleInstanceMutex?.ReleaseMutex();
+            try { Model.Stop(); } catch (Exception ex) { LogCrash(ex); }
+            try { _singleInstanceMutex?.ReleaseMutex(); } catch (ApplicationException) { }
         }
         _singleInstanceMutex?.Dispose();
         base.OnExit(e);
@@ -90,17 +117,7 @@ public partial class App : Application
             bgMenu.Items.Add(item);
         }
         var bgImage = new System.Windows.Controls.MenuItem { Header = "选择图片…" };
-        bgImage.Click += (_, _) =>
-        {
-            var dlg = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp",
-                Title = "选择岛背景图片"
-            };
-            if (dlg.ShowDialog() != true) return;
-            Model.SettingsStore.Settings.BackgroundImagePath = dlg.FileName;
-            SetBackground("image", null);
-        };
+        bgImage.Click += (_, _) => PickBackgroundImage();
         bgMenu.Items.Add(bgImage);
         menu.Items.Add(bgMenu);
 
@@ -126,6 +143,60 @@ public partial class App : Application
             ContextMenu = menu
         };
         _trayIcon.TrayLeftMouseUp += (_, _) => Model.ToggleExpanded();
+    }
+
+    private void PickBackgroundImage()
+    {
+        try
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp",
+                Title = "选择岛背景图片"
+            };
+            // the island window is NOACTIVATE and the tray menu's host is transient,
+            // so the dialog needs a real activatable owner or it can't take focus
+            var owner = new Window
+            {
+                WindowStyle = WindowStyle.None,
+                AllowsTransparency = true,
+                Opacity = 0,
+                ShowInTaskbar = false,
+                Width = 1,
+                Height = 1,
+                Topmost = true,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+            owner.Show();
+            owner.Activate();
+            try
+            {
+                if (dlg.ShowDialog(owner) != true) return;
+            }
+            finally
+            {
+                owner.Close();
+            }
+            Model.SettingsStore.Settings.BackgroundImagePath = dlg.FileName;
+            SetBackground("image", null);
+        }
+        catch (Exception ex)
+        {
+            LogCrash(ex);
+        }
+    }
+
+    private static void LogCrash(Exception? ex)
+    {
+        try
+        {
+            string dir = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WinFinger");
+            System.IO.Directory.CreateDirectory(dir);
+            System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "crash.log"),
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {ex}\r\n\r\n");
+        }
+        catch { }
     }
 
     private void SetBackground(string mode, string? color)
