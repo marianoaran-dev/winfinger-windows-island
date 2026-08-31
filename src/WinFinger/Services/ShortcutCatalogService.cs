@@ -46,16 +46,16 @@ public sealed class ShortcutCatalogService
     }
 
     private static readonly ShortcutSet GenericFallback = new(
-        "generic", "通用 Windows", Array.Empty<string>(),
+        "generic", "Windows", Array.Empty<string>(),
         new[]
         {
-            new ShortcutGroup("editing", "编辑", new[]
+            new ShortcutGroup("editing", "Editing", new[]
             {
-                new ShortcutItem("copy", "Ctrl+C", "复制"),
-                new ShortcutItem("paste", "Ctrl+V", "粘贴"),
-                new ShortcutItem("cut", "Ctrl+X", "剪切"),
-                new ShortcutItem("undo", "Ctrl+Z", "撤销"),
-                new ShortcutItem("select-all", "Ctrl+A", "全选")
+                new ShortcutItem("copy", "Ctrl+C", "Copy"),
+                new ShortcutItem("paste", "Ctrl+V", "Paste"),
+                new ShortcutItem("cut", "Ctrl+X", "Cut"),
+                new ShortcutItem("undo", "Ctrl+Z", "Undo"),
+                new ShortcutItem("select-all", "Ctrl+A", "Select all")
             })
         });
 }
