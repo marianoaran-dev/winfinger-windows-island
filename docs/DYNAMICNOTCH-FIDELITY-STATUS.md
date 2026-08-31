@@ -13,6 +13,8 @@ DynamicNotch's shell is content-driven rather than a fixed dashboard. The active
 
 DynamicNotch's balanced animation preset has now also been inspected directly. Its live-activity expansion uses a spring response of about 0.45 s with damping fraction 0.75; normal content/show transitions are around a 0.47 s response. WinFinger now has a damped-harmonic WPF easing function expressed in the same response/damping vocabulary instead of relying only on `BackEase`.
 
+Reference interaction inspection also confirms vertical swipe-to-dismiss/restore semantics, with horizontal swipe/scroll dismissal available in DynamicNotch. Swipe feedback is not merely a command gesture: the reference changes presentation geometry, corner treatment, opacity and blur during interaction.
+
 ## First vertical slice acceptance target
 
 1. Idle black capsule.
@@ -39,7 +41,7 @@ DynamicNotch's balanced animation preset has now also been inspected directly. I
 
 ### Activity presentation model
 
-`IslandActivityState` owns the presentation-level activity state independently of Windows services. It defines idle, media and temporary-notification activities, content-driven geometry, media compact/expanded states, temporary takeover/restoration, dismissal and restoration. Current target geometries are intentionally small and reference-like rather than dashboard-sized:
+`IslandActivityState` owns the presentation-level activity state independently of Windows services. It defines idle, media and temporary-notification activities, content-driven geometry, media compact/expanded states, temporary takeover/restoration, dismissal and restoration. Persistent activity state and user-dismissed content are tracked separately, so a temporary notification does not overwrite restore history. Current target geometries are intentionally small and reference-like rather than dashboard-sized:
 
 - Idle: 184 x 34, radius 17
 - Media compact: 320 x 64, radius 24
@@ -62,9 +64,24 @@ DynamicNotch's balanced animation preset has now also been inspected directly. I
 - Coalesces multi-property state changes so a temporary takeover does not animate through unintended intermediate states.
 - Adjusts shadow strength based on expanded geometry.
 
+### DynamicNotch gesture layer
+
+`IslandWindow.DynamicNotchGestures.cs` now adds the first reference-style interaction gesture without sacrificing WinFinger's useful free desktop positioning.
+
+- Pointer movement is held briefly until intent is known, preventing the old reposition handler from stealing a vertical swipe after only a few pixels.
+- Dominant vertical movement is treated as an activity gesture when dismissal/restoration is possible.
+- Upward swipe dismisses the current activity; downward swipe restores the last dismissed activity.
+- Other drag intent continues to reposition the island and retains clamping/glass recapture behaviour.
+- Media/control buttons are excluded from gesture capture so transport controls remain clickable.
+- During a claimed swipe the island receives interactive translation, horizontal stretch, vertical squash and opacity feedback.
+- Cancelled swipes return with the same damped-spring vocabulary used by the shell.
+- Horizontal swipe/scroll dismissal, reference-like corner-radius manipulation and blur during the swipe remain future fidelity work.
+
 ### Dedicated media presentation
 
 `MediaActivityView` has separate compact and expanded Now Playing layouts using the existing Windows media service for title, artist, artwork, play/pause, previous and next. The expanded layout remains a small player surface rather than a five-tab dashboard.
+
+The current media service does not yet expose timeline position/duration or seeking, so reference-like progress/scrubbing is the next major Now Playing fidelity gap.
 
 ### Motion fidelity
 
@@ -76,7 +93,7 @@ A package-free `tests/WinFinger.StateChecks` executable verifies the first prese
 
 idle -> media compact -> media expanded -> temporary notification -> media compact restore -> dismiss -> restore -> idle when media disappears.
 
-Windows CI now executes this state verifier between build and publish. The CI commit that introduced the state check completed successfully, including build, verifier, publish and artefact upload.
+Windows CI executes this state verifier between build and publish. CI has now completed successfully through restore, build, deterministic state verification, self-contained x64 publish and artefact upload for both the damped-spring work and the new swipe-gesture integration.
 
 The presentation layer also recognises the developer-only `WINFINGER_DYNAMICNOTCH_DEMO` environment variable with deterministic states: `idle`, `media-compact`, `media-expanded`, and `notification`. This is intended for repeatable screenshots/runtime comparison on a real Windows desktop without requiring live media or system events.
 
@@ -97,8 +114,9 @@ The presentation layer also recognises the developer-only `WINFINGER_DYNAMICNOTC
 - [x] Route media activity into the shell and morph to its geometry.
 - [x] Add press compression and coordinated content/shell transition.
 - [x] Temporary notification suspends/restores media through the coordinator.
-- [ ] Wire a DynamicNotch-style dismiss/restore gesture into interaction (state semantics already exist and are CI-verified).
+- [x] Wire a DynamicNotch-style vertical dismiss/restore gesture while preserving deliberate window repositioning.
 - [ ] Add richer expanded-player fidelity such as progress/scrubbing and reference-accurate spacing after runtime visual comparison.
+- [ ] Add horizontal swipe/scroll dismissal and remaining reference swipe feedback where useful on Windows.
 
 ### Phase C: deterministic verification
 
@@ -123,12 +141,13 @@ Screenshot, clipboard, timer, charging/battery, Bluetooth, volume, Wi-Fi/VPN, sc
 ## Verification state
 
 - Branch isolation: confirmed; `main` and `english-ui` remain untouched.
-- Reference architecture/source inspection: completed for DynamicNotch engine, view and balanced animation presets.
-- Dynamic shell integration commit: Windows CI restore/build/publish completed successfully.
+- Reference architecture/source inspection: completed for DynamicNotch engine, view, balanced animation presets and swipe/dismiss interaction semantics.
+- Dynamic shell integration: Windows CI restore/build/publish completed successfully.
 - Coordinator state verifier + CI integration: completed successfully.
-- Latest damped-spring tuning commit: CI is queued/running at this handoff, so it is not yet marked verified.
-- Windows desktop visual/runtime acceptance: not yet performed.
+- Damped-spring tuning: Windows CI completed successfully.
+- Vertical swipe dismiss/restore + drag arbitration: Windows CI completed successfully.
+- Physical Windows desktop visual/runtime acceptance: not yet performed.
 
 ## Next implementation task
 
-First confirm the damped-spring head commit passes Windows CI. Then add a reference-like dismiss/restore gesture without sacrificing a deliberate way to reposition the Windows island. After that, use the deterministic demo states for the first real Windows visual comparison and tune geometry/spacing/motion. If physical desktop access is still unavailable, continue with the next independent activities, preferably screenshot and clipboard because WinFinger already has useful plumbing for both.
+Increase Now Playing fidelity next, especially timeline/progress/seek behaviour and reference-accurate expanded-player spacing, while keeping the current Windows media session integration. In parallel, pursue a deterministic screenshot/visual regression path if it can run meaningfully in Windows CI. If physical desktop visual access remains unavailable, continue to screenshot and clipboard activities rather than blocking. Remaining gesture polish includes horizontal swipe/scroll dismissal plus corner-radius/blur feedback during swipe.
