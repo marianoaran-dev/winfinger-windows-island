@@ -1,0 +1,35 @@
+name: Windows build
+
+on:
+  push:
+    branches:
+      - dynamicnotch-fidelity
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore WinFinger.sln
+
+      - name: Build
+        run: dotnet build WinFinger.sln --configuration Release --no-restore
+
+      - name: Publish x64
+        run: dotnet publish src/WinFinger/WinFinger.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output artifacts/win-x64
+
+      - name: Upload published app
+        uses: actions/upload-artifact@v4
+        with:
+          name: WinFinger-dynamicnotch-win-x64
+          path: artifacts/win-x64/
+          if-no-files-found: error
