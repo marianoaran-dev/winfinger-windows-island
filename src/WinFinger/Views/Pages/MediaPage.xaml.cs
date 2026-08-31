@@ -39,7 +39,7 @@ public partial class MediaPage : UserControl, IIslandPage
         EmptyHint.Visibility = showPlayer ? Visibility.Collapsed : Visibility.Visible;
         if (!showPlayer) return;
 
-        TitleLabel.Text = media.Title.Length > 0 ? media.Title : "未知曲目";
+        TitleLabel.Text = media.Title.Length > 0 ? media.Title : "Unknown track";
         ArtistLabel.Text = media.Artist;
         CoverImage.Source = media.Cover;
         CoverPlaceholder.Visibility = media.Cover is null ? Visibility.Visible : Visibility.Collapsed;

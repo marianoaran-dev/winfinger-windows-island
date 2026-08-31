@@ -10,7 +10,7 @@ public sealed partial class ForegroundAppService : ObservableObject
 {
     /// <summary>Lowercase process name of the last foreground app (excluding WinFinger itself).</summary>
     [ObservableProperty] private string? _processName;
-    [ObservableProperty] private string _displayName = "当前应用";
+    [ObservableProperty] private string _displayName = "Current app";
 
     private IntPtr _hook;
     private NativeMethods.WinEventDelegate? _hookDelegate; // field: keeps delegate alive against GC

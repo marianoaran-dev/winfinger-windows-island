@@ -10,11 +10,11 @@
         <!-- Header: tab pills -->
         <Grid Grid.Row="0" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <RadioButton x:Name="TabClipboard" Style="{StaticResource Button.TabPill}" Content="剪贴板" GroupName="Pages"/>
-                <RadioButton x:Name="TabMedia" Style="{StaticResource Button.TabPill}" Content="媒体" GroupName="Pages" Margin="4,0,0,0"/>
-                <RadioButton x:Name="TabNotes" Style="{StaticResource Button.TabPill}" Content="便签" GroupName="Pages" Margin="4,0,0,0"/>
-                <RadioButton x:Name="TabShortcuts" Style="{StaticResource Button.TabPill}" Content="快捷键" GroupName="Pages" Margin="4,0,0,0"/>
-                <RadioButton x:Name="TabPomodoro" Style="{StaticResource Button.TabPill}" Content="番茄钟" GroupName="Pages" Margin="4,0,0,0"/>
+                <RadioButton x:Name="TabClipboard" Style="{StaticResource Button.TabPill}" Content="Clipboard" GroupName="Pages"/>
+                <RadioButton x:Name="TabMedia" Style="{StaticResource Button.TabPill}" Content="Media" GroupName="Pages" Margin="4,0,0,0"/>
+                <RadioButton x:Name="TabNotes" Style="{StaticResource Button.TabPill}" Content="Notes" GroupName="Pages" Margin="4,0,0,0"/>
+                <RadioButton x:Name="TabShortcuts" Style="{StaticResource Button.TabPill}" Content="Shortcuts" GroupName="Pages" Margin="4,0,0,0"/>
+                <RadioButton x:Name="TabPomodoro" Style="{StaticResource Button.TabPill}" Content="Pomodoro" GroupName="Pages" Margin="4,0,0,0"/>
             </StackPanel>
             <Button x:Name="CloseButton" Style="{StaticResource Button.Ghost}" HorizontalAlignment="Right"
                     VerticalAlignment="Center" Content="✕" FontSize="11" Padding="8,4"/>

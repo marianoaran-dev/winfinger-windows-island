@@ -1,8 +1,8 @@
 <Window x:Class="WinFinger.Views.AppearanceWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="WinFinger 外观设置"
-        Width="400" Height="560"
+        Title="WinFinger Appearance"
+        Width="430" Height="560"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
@@ -12,7 +12,7 @@
             BorderBrush="{StaticResource Brush.GlassRim}">
         <DockPanel Margin="20,14,20,18">
             <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
-                <TextBlock Text="外观设置" FontSize="16" FontWeight="SemiBold"
+                <TextBlock Text="Appearance" FontSize="16" FontWeight="SemiBold"
                            Foreground="{StaticResource Brush.TextPrimary}"/>
                 <Button Content="✕" HorizontalAlignment="Right" Width="26" Height="26"
                         Background="Transparent" BorderThickness="0"
@@ -20,7 +20,7 @@
                         Click="OnClose"/>
             </Grid>
 
-            <Button DockPanel.Dock="Bottom" Content="恢复默认" Height="32" Margin="0,12,0,0"
+            <Button DockPanel.Dock="Bottom" Content="Restore defaults" Height="32" Margin="0,12,0,0"
                     Background="{StaticResource Brush.Surface}" BorderThickness="0"
                     Foreground="{StaticResource Brush.TextPrimary}" Cursor="Hand"
                     Click="OnResetDefaults"/>
@@ -28,13 +28,13 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <!-- background mode -->
-                    <TextBlock Text="背景" Style="{StaticResource Text.SectionLabel}"/>
+                    <TextBlock Text="Background" Style="{StaticResource Text.SectionLabel}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,4">
-                        <RadioButton x:Name="ModeGlass" Content="动态玻璃" Checked="OnModeChanged"
+                        <RadioButton x:Name="ModeGlass" Content="Live glass" Checked="OnModeChanged"
                                      Foreground="{StaticResource Brush.TextPrimary}" Margin="0,0,14,0"/>
-                        <RadioButton x:Name="ModeColor" Content="纯色" Checked="OnModeChanged"
+                        <RadioButton x:Name="ModeColor" Content="Solid colour" Checked="OnModeChanged"
                                      Foreground="{StaticResource Brush.TextPrimary}" Margin="0,0,14,0"/>
-                        <RadioButton x:Name="ModeImage" Content="图片" Checked="OnModeChanged"
+                        <RadioButton x:Name="ModeImage" Content="Image" Checked="OnModeChanged"
                                      Foreground="{StaticResource Brush.TextPrimary}"/>
                     </StackPanel>
 
@@ -51,11 +51,11 @@
                                     CornerRadius="6" Background="#1A1A22"
                                     BorderBrush="{StaticResource Brush.Stroke}" BorderThickness="1"/>
                         </Grid>
-                        <TextBlock Text="色相" Style="{StaticResource Text.SmallLabel}"/>
+                        <TextBlock Text="Hue" Style="{StaticResource Text.SmallLabel}"/>
                         <Slider x:Name="HueSlider" Minimum="0" Maximum="360" ValueChanged="OnHsvChanged"/>
-                        <TextBlock Text="饱和度" Style="{StaticResource Text.SmallLabel}"/>
+                        <TextBlock Text="Saturation" Style="{StaticResource Text.SmallLabel}"/>
                         <Slider x:Name="SatSlider" Minimum="0" Maximum="1" ValueChanged="OnHsvChanged"/>
-                        <TextBlock Text="明度" Style="{StaticResource Text.SmallLabel}"/>
+                        <TextBlock Text="Brightness" Style="{StaticResource Text.SmallLabel}"/>
                         <Slider x:Name="ValSlider" Minimum="0" Maximum="1" ValueChanged="OnHsvChanged"/>
                         <WrapPanel x:Name="SwatchPanel" Margin="0,8,0,0"/>
                     </StackPanel>
@@ -67,32 +67,32 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="ImagePathText" Grid.Column="0" Text="未选择图片"
+                            <TextBlock x:Name="ImagePathText" Grid.Column="0" Text="No image selected"
                                        Foreground="{StaticResource Brush.TextSecondary}" FontSize="11"
                                        TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Content="选择图片…" Padding="10,4" Margin="8,0,0,0"
+                            <Button Grid.Column="1" Content="Choose image…" Padding="10,4" Margin="8,0,0,0"
                                     Background="{StaticResource Brush.Surface}" BorderThickness="0"
                                     Foreground="{StaticResource Brush.TextPrimary}" Cursor="Hand"
                                     Click="OnPickImage"/>
                         </Grid>
-                        <TextBlock Text="图片暗化" Style="{StaticResource Text.SmallLabel}"/>
+                        <TextBlock Text="Image dimming" Style="{StaticResource Text.SmallLabel}"/>
                         <Slider x:Name="DimSlider" Minimum="0" Maximum="0.8" ValueChanged="OnTuneChanged"/>
                     </StackPanel>
 
                     <!-- glass tuning -->
-                    <TextBlock Text="玻璃" Style="{StaticResource Text.SectionLabel}" Margin="0,14,0,0"/>
-                    <TextBlock Text="玻璃暗度" Style="{StaticResource Text.SmallLabel}"/>
+                    <TextBlock Text="Glass" Style="{StaticResource Text.SectionLabel}" Margin="0,14,0,0"/>
+                    <TextBlock Text="Glass darkness" Style="{StaticResource Text.SmallLabel}"/>
                     <Slider x:Name="DarkSlider" Minimum="0" Maximum="1" ValueChanged="OnTuneChanged"/>
-                    <TextBlock x:Name="SatLabel" Text="取景饱和度" Style="{StaticResource Text.SmallLabel}"/>
+                    <TextBlock x:Name="SatLabel" Text="Capture saturation" Style="{StaticResource Text.SmallLabel}"/>
                     <Slider x:Name="GlassSatSlider" Minimum="1.0" Maximum="2.2" ValueChanged="OnTuneChanged"/>
 
-                    <TextBlock Text="闲置淡出透明度（1 = 不淡出）" Style="{StaticResource Text.SmallLabel}"/>
+                    <TextBlock Text="Idle fade opacity (1 = no fade)" Style="{StaticResource Text.SmallLabel}"/>
                     <Slider x:Name="GhostSlider" Minimum="0.1" Maximum="1.0" ValueChanged="OnTuneChanged"/>
 
-                    <TextBlock Text="光效" Style="{StaticResource Text.SectionLabel}" Margin="0,14,0,0"/>
-                    <CheckBox x:Name="GlintCheck" Content="呼吸边缘光" Margin="0,6,0,2"
+                    <TextBlock Text="Lighting effects" Style="{StaticResource Text.SectionLabel}" Margin="0,14,0,0"/>
+                    <CheckBox x:Name="GlintCheck" Content="Breathing edge glow" Margin="0,6,0,2"
                               Foreground="{StaticResource Brush.TextPrimary}" Checked="OnTuneChanged" Unchecked="OnTuneChanged"/>
-                    <CheckBox x:Name="ChromaCheck" Content="棱边色散" Margin="0,4,0,0"
+                    <CheckBox x:Name="ChromaCheck" Content="Chromatic edge" Margin="0,4,0,0"
                               Foreground="{StaticResource Brush.TextPrimary}" Checked="OnTuneChanged" Unchecked="OnTuneChanged"/>
                 </StackPanel>
             </ScrollViewer>

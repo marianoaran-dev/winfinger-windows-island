@@ -29,7 +29,7 @@ public sealed class NoteStore
     {
         var note = Notes.FirstOrDefault(n => n.Id == id);
         if (note is null) return;
-        note.Title = string.IsNullOrWhiteSpace(title) ? "未命名便签" : title;
+        note.Title = string.IsNullOrWhiteSpace(title) ? "Untitled note" : title;
         note.Body = body;
         note.UpdatedAt = DateTime.Now;
         Sort();

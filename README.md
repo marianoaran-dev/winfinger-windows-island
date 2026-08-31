@@ -1,61 +1,70 @@
 # WinFinger
 
-一个 Windows 灵动岛效率工具 —— macOS 刘海工具 [MacFinger] 的 Windows 移植 + 灵动岛增强版。
+A Windows Dynamic Island productivity utility, ported from the macOS notch utility **MacFinger** and enhanced with Dynamic Island-style interactions.
 
-屏幕顶部常驻一个 iOS 灵动岛风格的 Liquid Glass 玻璃胶囊，实时显示网速与内存；点击弹性展开为五页面板：**剪贴板历史 / 媒体控制 / 便利贴 / 快捷键 / 番茄钟**。
+WinFinger keeps an iOS Dynamic Island-inspired Liquid Glass capsule at the top of the screen. In compact mode it shows live network speed and memory usage. Click it to expand into a five-page panel: **Clipboard History / Media Controls / Sticky Notes / Shortcuts / Pomodoro**.
 
-## 下载
+## Download
 
-前往 [Releases](../../releases) 下载最新的 `WinFinger.exe`（单文件，内置运行时，无需安装 .NET），双击即用。
+Go to [Releases](../../releases) and download the latest `WinFinger.exe` package. The published build is self-contained, so .NET does not need to be installed separately.
 
-## 功能
+## Features
 
-| 模块 | 说明 |
+| Module | Description |
 |---|---|
-| 紧凑岛 | 顶部居中黑色胶囊：左侧媒体封面（播放时），右侧 `↓下行 ↑上行 · 内存%` 每秒刷新 |
-| 剪贴板历史 | 事件驱动监听（WM_CLIPBOARDUPDATE），文本+图片，SHA256 去重，上限 100 条，图片落盘 PNG，可暂停/清空/一键回贴，记录来源应用 |
-| 媒体控制 | 系统全局媒体会话（GSMTC）：封面/标题/艺术家，播放暂停/上下曲，支持 Spotify、浏览器、网易云等 |
-| 便利贴 | 列表+编辑器，自动保存（500ms 去抖），置顶排序，Ctrl+N 新建 |
-| 快捷键词典 | 按前台应用自动切换（资源管理器/Chrome/Edge/VS Code/Word/Excel/微信/Terminal），无匹配显示 Windows 通用快捷键 |
-| 番茄钟 | 专注/休息循环（时长可调），紧凑岛显示倒计时，到点岛内弹通知+提示音 |
-| 岛内通知 | 复制捕获、番茄到点等事件触发胶囊“鼓起”通知条 3 秒 |
-| 音频可视化 | 播放音乐时胶囊内 8 根频谱条实时跳动（WASAPI loopback + FFT） |
-| 封面取色辉光 | 从专辑封面提取主色，岛体外圈随播放呼吸脉动的彩色辉光 |
-| 悬停预展开 | 鼠标悬停胶囊轻微放大并露出歌名，点击才全展开 |
-| Liquid Glass | 自制实时磨砂玻璃：抓取岛后方屏幕 → 降采样模糊 → 饱和度 ×1.6 增强 → 岛底层渲染，背景颜色鲜艳透过玻璃（Windows acrylic 只会出灰，故弃用）；玻璃 rim 折射描边、呼吸游走边缘光、色散棱边、顶部弧面反光、展开流光扫过、播放音乐时封面主色渗入 |
-| 幽灵模式 | 鼠标远离时岛体淡化至 40% 且点击穿透（不挡浏览器标签页），靠近自动实体化 |
-| 拖拽换位 | 按住胶囊水平拖动换位置，重启后保留 |
+| Compact island | Top-centred black/glass capsule. Shows album artwork while media is playing, plus live `↓ download ↑ upload · memory %` metrics refreshed every second. |
+| Clipboard history | Event-driven monitoring using `WM_CLIPBOARDUPDATE`. Supports text and images, SHA-256 deduplication, up to 100 entries, PNG image storage, pause/clear/restore actions and source-application tracking. |
+| Media controls | Uses the Windows global media session API (GSMTC) for artwork, title, artist, play/pause and previous/next controls. Supports Spotify, browsers and other compatible media apps. |
+| Sticky notes | Notes list and editor with automatic save after a 500 ms debounce, pinned-note sorting and `Ctrl+N` for a new note. |
+| Shortcut catalogue | Automatically changes according to the foreground application, including File Explorer, Chrome, Edge, VS Code, Word, Excel, WeChat and Windows Terminal. Falls back to general Windows shortcuts when no specific match exists. |
+| Pomodoro | Configurable focus/break cycle. The compact island shows the countdown and displays an in-island alert with sound when a phase completes. |
+| In-island notifications | Events such as clipboard captures and Pomodoro completion temporarily expand the capsule into a notification strip for three seconds. |
+| Audio visualiser | Eight spectrum bars animate in real time while media is playing, using WASAPI loopback and FFT analysis. |
+| Artwork-colour glow | Extracts the dominant album-art colour and uses it for a softly pulsing glow around the island during playback. |
+| Hover pre-expand | Hovering over the capsule slightly enlarges it and reveals the current track title. Click to fully expand. |
+| Liquid Glass | Custom real-time glass effect: captures the screen behind the island, downsamples and blurs it, increases saturation by 1.6×, then renders it behind the island. Includes a refractive rim, animated edge lighting, chromatic fringe, top highlight, expansion shimmer and artwork-colour bleed. Windows Acrylic was not used because it desaturates the background too strongly. |
+| Ghost mode | When the pointer is away, the island fades to 40% opacity and becomes click-through so it does not block browser tabs. It becomes interactive again when the pointer approaches. |
+| Drag to reposition | Drag the capsule horizontally to reposition it. The location is remembered between launches. |
 
-## 交互
+## Interaction
 
-- **点击胶囊** 展开 / **Esc** 或 **点击面板外** 收起
-- **Ctrl+1..5** 切换页面（剪贴板/媒体/便签/快捷键/番茄钟）
-- 托盘图标：打开、暂停剪贴板、清空历史、开机自启、退出
-- 托盘 → **外观设置…**：岛背景三模式（动态玻璃 / 任意纯色 / 自定义图片），HSV 取色器 + Hex 输入、图片暗化、玻璃暗度/饱和度、光效开关，全部实时预览并记忆；纯色/图片模式下取景完全停止，零额外开销
-- 无任务栏图标、不出现在 Alt-Tab
+- **Click the capsule** to expand it. Press **Esc** or click outside the panel to collapse it.
+- **Ctrl+1..5** switches pages: Clipboard / Media / Notes / Shortcuts / Pomodoro.
+- Tray icon actions include Open, Pause Clipboard History, Clear Clipboard History, Start with Windows and Exit.
+- Tray → **Appearance…** provides three background modes: Live Glass, solid colour or custom image. It includes an HSV colour picker and hex input, image dimming, glass darkness/saturation, lighting-effect toggles and live preview. Settings are remembered.
+- In solid-colour or image mode, live screen capture stops completely, eliminating that extra processing overhead.
+- The island does not appear on the taskbar or in Alt+Tab.
 
-## 技术栈
+## Technology
 
-WPF / .NET 8（`net8.0-windows10.0.19041.0`，内置 CsWinRT 投影调用 WinRT 媒体 API），MVVM（CommunityToolkit.Mvvm），托盘用 Hardcodet.NotifyIcon.Wpf。Per-Monitor V2 DPI。
+WPF / .NET 8 (`net8.0-windows10.0.19041.0`) with embedded CsWinRT projections for the WinRT media APIs. MVVM uses CommunityToolkit.Mvvm, and the tray icon uses Hardcodet.NotifyIcon.Wpf. Per-Monitor V2 DPI is supported.
 
-窗口方案：透明无边框置顶窗口固定为最大尺寸，仅对内部 Border 的宽/高/圆角做 Storyboard 动画（展开 `BackEase` 弹性 280ms，收起 `CubicEase` 180ms），透明像素天然点击穿透。
+### Window implementation
 
-磨砂模糊方案：Windows 自带 acrylic（DWM SystemBackdrop）会把背景色几乎全部去饱和成灰，达不到 liquid glass「背景颜色鲜艳透过玻璃」的效果，因此玻璃是自制的——12.5fps 用 GDI `StretchBlt` 把岛后方屏幕区域直接降采样进 128×84 DIB（降采样即预模糊），两趟盒式模糊 + 饱和度 ×1.6 + 提亮后写入 `WriteableBitmap`，作为岛底层 `ImageBrush` 渲染。岛窗口设 `WDA_EXCLUDEFROMCAPTURE` 防止抓到自己形成反馈循环。
+The application uses a transparent, borderless, always-on-top window at maximum size. Only the internal island Border's width, height and corner radius are animated. Expansion uses a 280 ms `BackEase` spring animation; collapse uses a 180 ms `CubicEase`. Transparent pixels naturally allow pointer input to pass through.
 
-> 注意：因 `WDA_EXCLUDEFROMCAPTURE`，**灵动岛不会出现在截图/录屏/屏幕共享里**（与 DRM 保护窗口同机制）。想截含岛的图请用手机拍摄。
+### Glass implementation
 
-> 已知裁剪：不接管系统 Toast 通知——WinRT `UserNotificationListener` 需要 MSIX package identity，unpackaged exe 不可用；岛内通知仅承载应用自有事件。
+Windows' built-in Acrylic (`DWM SystemBackdrop`) desaturates the background too heavily for the intended Liquid Glass effect, so WinFinger implements its own renderer.
 
-## 构建
+At 12.5 fps, GDI `StretchBlt` captures the screen region behind the island and downsamples it directly into a 128×84 DIB. Downsampling provides the initial blur, followed by two box-blur passes, 1.6× saturation enhancement and brightness adjustment. The result is written to a `WriteableBitmap` and rendered as the island's background `ImageBrush`.
 
-需要 .NET 8 SDK：
+The island window uses `WDA_EXCLUDEFROMCAPTURE` to prevent feedback loops when capturing the screen behind itself.
+
+> **Note:** Because of `WDA_EXCLUDEFROMCAPTURE`, the island does **not** appear in screenshots, screen recordings or screen sharing. To photograph the island itself, use an external camera.
+
+> **Known limitation:** WinFinger does not intercept Windows system Toast notifications. `UserNotificationListener` requires MSIX package identity, which an unpackaged executable does not have. In-island notifications therefore cover only WinFinger's own events.
+
+## Build
+
+Requires the .NET 8 SDK:
 
 ```bash
-dotnet build                # 调试
+dotnet build
 dotnet run --project src/WinFinger
 ```
 
-发布单文件（约 75MB，含运行时，无需安装 .NET）：
+Publish a self-contained single-file x64 build (approximately 75 MB including the runtime):
 
 ```bash
 dotnet publish src/WinFinger/WinFinger.csproj -c Release -r win-x64 --self-contained \
@@ -63,23 +72,27 @@ dotnet publish src/WinFinger/WinFinger.csproj -c Release -r win-x64 --self-conta
   -p:EnableCompressionInSingleFile=true
 ```
 
-产物：`src/WinFinger/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish/WinFinger.exe`
+Output:
 
-## 本地数据
-
+```text
+src/WinFinger/bin/Release/net8.0-windows10.0.19041.0/win-x64/publish/WinFinger.exe
 ```
+
+## Local data
+
+```text
 %APPDATA%\WinFinger\
-├── clipboard.json      # 剪贴板元数据（字段与 mac 版兼容）
-├── notes.json          # 便利贴
-├── settings.json       # 设置
-└── ClipboardMedia\     # 剪贴板图片 PNG
+├── clipboard.json      # Clipboard metadata
+├── notes.json          # Sticky notes
+├── settings.json       # Settings
+└── ClipboardMedia\     # Clipboard image PNG files
 ```
 
-## 环境要求
+## Requirements
 
-- Windows 10 1809+（Windows 11 最佳）
-- 剪贴板可能包含敏感内容（密码等），历史以明文存本地磁盘，请知悉；可随时暂停记录或清空
+- Windows 10 1809 or later; Windows 11 is recommended.
+- Clipboard history may contain sensitive information. Clipboard history is stored as plaintext on the local disk. You can pause recording or clear the history at any time.
 
-## 许可证
+## Licence
 
-仅供学习和个人使用。
+For learning and personal use only.
