@@ -42,7 +42,7 @@ public partial class App : Application
 
         CreateTrayIcon();
 
-        // repro hook: WINFINGER_PICKTEST=1 fires the tray 选择图片 flow 3s after startup
+        // repro hook: WINFINGER_PICKTEST=1 fires the tray image-picker flow 3s after startup
         if (Environment.GetEnvironmentVariable("WINFINGER_PICKTEST") == "1")
         {
             var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
@@ -79,36 +79,36 @@ public partial class App : Application
     {
         var menu = new System.Windows.Controls.ContextMenu();
 
-        var openItem = new System.Windows.Controls.MenuItem { Header = "打开 WinFinger" };
+        var openItem = new System.Windows.Controls.MenuItem { Header = "Open WinFinger" };
         openItem.Click += (_, _) => Model.IsExpanded = true;
         menu.Items.Add(openItem);
 
         var pauseItem = new System.Windows.Controls.MenuItem
         {
-            Header = "暂停记录剪贴板",
+            Header = "Pause clipboard history",
             IsCheckable = true,
             IsChecked = Model.ClipboardMonitor.IsPaused
         };
         pauseItem.Click += (_, _) => Model.ClipboardMonitor.IsPaused = pauseItem.IsChecked;
         menu.Items.Add(pauseItem);
 
-        var clearItem = new System.Windows.Controls.MenuItem { Header = "清空剪贴板历史" };
+        var clearItem = new System.Windows.Controls.MenuItem { Header = "Clear clipboard history" };
         clearItem.Click += (_, _) => Model.ClipboardStore.Clear();
         menu.Items.Add(clearItem);
 
-        var appearanceItem = new System.Windows.Controls.MenuItem { Header = "外观设置…" };
+        var appearanceItem = new System.Windows.Controls.MenuItem { Header = "Appearance…" };
         appearanceItem.Click += (_, _) => OpenAppearanceWindow();
         menu.Items.Add(appearanceItem);
 
-        var bgMenu = new System.Windows.Controls.MenuItem { Header = "岛背景" };
-        var bgGlass = new System.Windows.Controls.MenuItem { Header = "动态玻璃" };
+        var bgMenu = new System.Windows.Controls.MenuItem { Header = "Island background" };
+        var bgGlass = new System.Windows.Controls.MenuItem { Header = "Live glass" };
         bgGlass.Click += (_, _) => SetBackground("glass", null);
         bgMenu.Items.Add(bgGlass);
         (string name, string hex)[] presets =
         {
-            ("经典深灰", "#1A1A22"), ("纯黑", "#0A0A0F"), ("深蓝", "#16283E"),
-            ("深紫", "#1D1440"), ("酒红", "#3D0F14"), ("墨绿", "#0F3324"),
-            ("暖棕", "#33270F"), ("青黛", "#0E3338")
+            ("Classic dark grey", "#1A1A22"), ("Black", "#0A0A0F"), ("Deep blue", "#16283E"),
+            ("Deep purple", "#1D1440"), ("Burgundy", "#3D0F14"), ("Forest green", "#0F3324"),
+            ("Warm brown", "#33270F"), ("Deep teal", "#0E3338")
         };
         foreach (var (name, hex) in presets)
         {
@@ -116,14 +116,14 @@ public partial class App : Application
             item.Click += (_, _) => SetBackground("color", hex);
             bgMenu.Items.Add(item);
         }
-        var bgImage = new System.Windows.Controls.MenuItem { Header = "选择图片…" };
+        var bgImage = new System.Windows.Controls.MenuItem { Header = "Choose image…" };
         bgImage.Click += (_, _) => PickBackgroundImage();
         bgMenu.Items.Add(bgImage);
         menu.Items.Add(bgMenu);
 
         var autoStartItem = new System.Windows.Controls.MenuItem
         {
-            Header = "开机自启动",
+            Header = "Start with Windows",
             IsCheckable = true,
             IsChecked = Model.SettingsStore.Settings.AutoStart
         };
@@ -132,7 +132,7 @@ public partial class App : Application
 
         menu.Items.Add(new System.Windows.Controls.Separator());
 
-        var quitItem = new System.Windows.Controls.MenuItem { Header = "退出 WinFinger" };
+        var quitItem = new System.Windows.Controls.MenuItem { Header = "Exit WinFinger" };
         quitItem.Click += (_, _) => Shutdown();
         menu.Items.Add(quitItem);
 
@@ -151,8 +151,8 @@ public partial class App : Application
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
-                Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp",
-                Title = "选择岛背景图片"
+                Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.webp",
+                Title = "Choose island background image"
             };
             // the island window is NOACTIVATE and the tray menu's host is transient,
             // so the dialog needs a real activatable owner or it can't take focus
