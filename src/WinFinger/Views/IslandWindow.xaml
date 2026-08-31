@@ -19,8 +19,8 @@
         <Border x:Name="IslandBorder"
                 HorizontalAlignment="Center" VerticalAlignment="Top"
                 Margin="0,8,0,0"
-                Width="300" Height="36"
-                CornerRadius="18"
+                Width="184" Height="34"
+                CornerRadius="17"
                 Background="#01000000"
                 BorderBrush="{StaticResource Brush.GlassRim}"
                 BorderThickness="1.2"
@@ -35,7 +35,6 @@
             </Border.Effect>
 
             <Grid ClipToBounds="True">
-                <!-- live frosted glass: blurred + saturation-boosted capture of what's behind -->
                 <Border x:Name="GlassLayer" IsHitTestVisible="False"
                         CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}"
                         RenderOptions.BitmapScalingMode="Fant">
@@ -44,16 +43,13 @@
                     </Border.Background>
                 </Border>
 
-                <!-- image dim: darkens a custom background image for legibility -->
                 <Border x:Name="ImageDimLayer" IsHitTestVisible="False" Background="#000000" Opacity="0"
                         CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}"/>
 
-                <!-- smoked glass body tint (opacity = user's 玻璃暗度) -->
                 <Border x:Name="BodyTintLayer" IsHitTestVisible="False" Opacity="1"
                         Background="{StaticResource Brush.IslandBody}"
                         CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}"/>
 
-                <!-- adaptive tint: album accent bleeds into the glass while music plays -->
                 <Border x:Name="TintLayer" IsHitTestVisible="False" Opacity="0"
                         CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}">
                     <Border.Background>
@@ -61,39 +57,33 @@
                     </Border.Background>
                 </Border>
 
-                <!-- curved top reflection: scales with the island, fades out by ~45% height -->
                 <Border Background="{StaticResource Brush.TopSheen}"
                         CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False"/>
 
                 <views:CompactIslandView x:Name="CompactView"/>
-
+                <views:MediaActivityView x:Name="MediaActivityView" Opacity="0" Visibility="Collapsed"/>
                 <views:ExpandedPanelView x:Name="ExpandedView" Opacity="0" Visibility="Collapsed"/>
 
-                <!-- transient notification bulge -->
                 <Grid x:Name="NotificationView" Opacity="0" Visibility="Collapsed">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock x:Name="NotificationIcon" FontSize="13" VerticalAlignment="Center" Text="📋"/>
                         <TextBlock x:Name="NotificationText" Style="{StaticResource Text.Body}" FontSize="12"
-                                   Margin="8,0,0,0" VerticalAlignment="Center" MaxWidth="340"
+                                   Margin="8,0,0,0" VerticalAlignment="Center" MaxWidth="300"
                                    TextTrimming="CharacterEllipsis" Text=""/>
                     </StackPanel>
                 </Grid>
 
-                <!-- inner dark edge: glass thickness -->
                 <Border Margin="1" BorderThickness="1" BorderBrush="{StaticResource Brush.GlassInnerEdge}"
                         CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False"/>
 
-                <!-- chromatic dispersion along the bevel -->
                 <Border x:Name="ChromaticLayer" Margin="1.4" BorderThickness="1" BorderBrush="{StaticResource Brush.ChromaticEdge}"
                         CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False"/>
 
-                <!-- breathing glints: light slowly travels between the two edges -->
                 <Border x:Name="GlintA" BorderThickness="1.4" BorderBrush="{StaticResource Brush.GlintTopLeft}"
                         CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False" Opacity="0.2"/>
                 <Border x:Name="GlintB" BorderThickness="1.4" BorderBrush="{StaticResource Brush.GlintBottomRight}"
                         CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False" Opacity="0.9"/>
 
-                <!-- sheen band swept across on expand / notification -->
                 <Border x:Name="SheenBand" Width="150" HorizontalAlignment="Left" Opacity="0"
                         Background="{StaticResource Brush.SheenSweep}" IsHitTestVisible="False">
                     <Border.RenderTransform>
