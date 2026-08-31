@@ -23,7 +23,7 @@ public partial class ClipboardPage : UserControl, IIslandPage
         PauseButton.Click += (_, _) =>
         {
             model.ClipboardMonitor.IsPaused = !model.ClipboardMonitor.IsPaused;
-            PauseButton.Content = model.ClipboardMonitor.IsPaused ? "继续记录" : "暂停记录";
+            PauseButton.Content = model.ClipboardMonitor.IsPaused ? "Resume" : "Pause";
         };
         ClearButton.Click += (_, _) => model.ClipboardStore.Clear();
 
