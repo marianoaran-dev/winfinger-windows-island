@@ -12,7 +12,8 @@
         ResizeMode="NoResize"
         Width="980" Height="620"
         SnapsToDevicePixels="True"
-        UseLayoutRounding="True">
+        UseLayoutRounding="True"
+        Loaded="OnDynamicNotchLoaded">
 
     <!-- The window is a fixed transparent stage; only IslandBorder animates. -->
     <Grid>
