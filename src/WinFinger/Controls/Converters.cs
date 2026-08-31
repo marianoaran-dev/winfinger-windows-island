@@ -6,18 +6,18 @@ using System.Windows.Media.Imaging;
 
 namespace WinFinger.Controls;
 
-/// <summary>"刚刚 / 5 分钟前 / 昨天 14:30 / 08-12" style timestamps.</summary>
+/// <summary>"Just now / 5 min ago / Yesterday 14:30 / 08-12" style timestamps.</summary>
 public sealed class RelativeTimeConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         if (value is not DateTime time) return "";
         var delta = DateTime.Now - time;
-        if (delta.TotalMinutes < 1) return "刚刚";
-        if (delta.TotalHours < 1) return $"{(int)delta.TotalMinutes} 分钟前";
+        if (delta.TotalMinutes < 1) return "Just now";
+        if (delta.TotalHours < 1) return $"{(int)delta.TotalMinutes} min ago";
         if (time.Date == DateTime.Today) return time.ToString("HH:mm");
-        if (time.Date == DateTime.Today.AddDays(-1)) return $"昨天 {time:HH:mm}";
-        return time.ToString("MM-dd");
+        if (time.Date == DateTime.Today.AddDays(-1)) return $"Yesterday {time:HH:mm}";
+        return time.ToString("dd-MM");
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
