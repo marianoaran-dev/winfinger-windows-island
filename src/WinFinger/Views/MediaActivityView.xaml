@@ -11,7 +11,7 @@
                 <ColumnDefinition Width="44"/>
             </Grid.ColumnDefinitions>
             <Border Grid.Column="0" Width="46" Height="46" CornerRadius="12"
-                    HorizontalAlignment="Left" VerticalAlignment="Center" Background="#161616">
+                    HorizontalAlignment="Left" VerticalAlignment="Center" Background="#161616" ClipToBounds="True">
                 <Grid>
                     <Image x:Name="CompactCover" Stretch="UniformToFill"/>
                     <TextBlock x:Name="CompactCoverFallback" Text="♪" FontSize="20" Foreground="#BFFFFFFF"
@@ -38,7 +38,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Border Grid.Column="0" Width="144" Height="144" CornerRadius="22"
-                    HorizontalAlignment="Left" VerticalAlignment="Center" Background="#161616">
+                    HorizontalAlignment="Left" VerticalAlignment="Center" Background="#161616" ClipToBounds="True">
                 <Grid>
                     <Image x:Name="ExpandedCover" Stretch="UniformToFill"/>
                     <TextBlock x:Name="ExpandedCoverFallback" Text="♪" FontSize="42" Foreground="#BFFFFFFF"
@@ -51,12 +51,38 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <TextBlock x:Name="ExpandedTitle" Grid.Row="0" Foreground="White" FontSize="18" FontWeight="SemiBold"
                            TextTrimming="CharacterEllipsis"/>
                 <TextBlock x:Name="ExpandedArtist" Grid.Row="1" Foreground="#A6FFFFFF" FontSize="13" Margin="0,4,0,0"
                            TextTrimming="CharacterEllipsis"/>
-                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center">
+
+                <Grid Grid.Row="3" x:Name="SeekRegion" Margin="0,0,0,4"
+                      MouseLeftButtonDown="OnSeekMouseDown"
+                      MouseMove="OnSeekMouseMove"
+                      MouseLeftButtonUp="OnSeekMouseUp">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" VerticalAlignment="Center" Height="12" Cursor="Hand">
+                        <Border Height="3" CornerRadius="2" Background="#36FFFFFF" VerticalAlignment="Center"/>
+                        <Border x:Name="SeekProgress" Height="3" CornerRadius="2" Background="White"
+                                HorizontalAlignment="Left" VerticalAlignment="Center" Width="0"/>
+                        <Ellipse x:Name="SeekThumb" Width="8" Height="8" Fill="White" HorizontalAlignment="Left"
+                                 Margin="-4,0,0,0" VerticalAlignment="Center" Opacity="0.92"/>
+                    </Grid>
+                    <Grid Grid.Row="1">
+                        <TextBlock x:Name="PositionText" Text="0:00" Foreground="#72FFFFFF" FontSize="9"
+                                   HorizontalAlignment="Left"/>
+                        <TextBlock x:Name="DurationText" Text="0:00" Foreground="#72FFFFFF" FontSize="9"
+                                   HorizontalAlignment="Right"/>
+                    </Grid>
+                </Grid>
+
+                <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button Width="48" Height="38" Margin="0,0,12,0" Click="OnPrevious" Content="⏮"
                             Foreground="White" Background="#14FFFFFF" BorderBrush="#20FFFFFF"/>
                     <Button x:Name="PlayPauseButton" Width="58" Height="42" Click="OnPlayPause" Content="▶"
