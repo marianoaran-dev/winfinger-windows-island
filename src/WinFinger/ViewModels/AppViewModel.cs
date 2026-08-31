@@ -56,6 +56,9 @@ public sealed partial class AppViewModel : ObservableObject
                 settings.PomodoroBreakMinutes = Pomodoro.BreakMinutes;
                 SettingsStore.Save();
             }
+
+            if (e.PropertyName == nameof(PomodoroService.Phase))
+                IslandActivity.SetTimerActive(Pomodoro.Phase != PomodoroPhase.Idle);
         };
         Media.PropertyChanged += (_, e) =>
         {
@@ -70,7 +73,7 @@ public sealed partial class AppViewModel : ObservableObject
         };
         Pomodoro.PhaseCompleted += phase =>
         {
-            Notifications.Post("🍅", phase == Services.PomodoroPhase.Focus ? "Focus complete. Time for a break." : "Break complete. Time to focus.");
+            Notifications.Post("🍅", phase == PomodoroPhase.Focus ? "Focus complete. Time for a break." : "Break complete. Time to focus.");
             System.Media.SystemSounds.Asterisk.Play();
         };
     }

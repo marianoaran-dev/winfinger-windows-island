@@ -34,6 +34,7 @@ public partial class IslandWindow
         _dynamicNotchAttached = true;
 
         MediaActivityView.Initialize(_model);
+        TimerActivityView.Initialize(_model);
 
         IslandBorder.MouseLeftButtonUp -= OnIslandClicked;
         IslandBorder.MouseEnter -= OnIslandMouseEnter;
@@ -98,15 +99,27 @@ public partial class IslandWindow
         switch (demo)
         {
             case "idle":
+                _model.Pomodoro.Reset();
                 _model.IslandActivity.SetMediaAvailable(false);
                 break;
             case "media-compact":
+                _model.Pomodoro.Reset();
                 _model.IslandActivity.SetMediaAvailable(true);
                 _model.IslandActivity.Collapse();
                 break;
             case "media-expanded":
+                _model.Pomodoro.Reset();
                 _model.IslandActivity.SetMediaAvailable(true);
                 if (!_model.IslandActivity.IsExpanded)
+                    _model.IslandActivity.ToggleExpanded();
+                break;
+            case "timer-compact":
+            case "timer-expanded":
+                _model.IslandActivity.SetMediaAvailable(true);
+                _model.Pomodoro.StartFocus();
+                _model.Pomodoro.Pause();
+                _model.IslandActivity.Collapse();
+                if (demo == "timer-expanded")
                     _model.IslandActivity.ToggleExpanded();
                 break;
             case "notification":
@@ -178,10 +191,12 @@ public partial class IslandWindow
         }
 
         bool showMedia = activity.Kind == IslandActivityKind.Media;
+        bool showTimer = activity.Kind == IslandActivityKind.Timer;
         bool showNotification = activity.Kind == IslandActivityKind.Notification;
         bool showClipboard = activity.Kind == IslandActivityKind.Clipboard;
 
         SetActivityVisibility(MediaActivityView, showMedia, animate);
+        SetActivityVisibility(TimerActivityView, showTimer, animate);
         SetActivityVisibility(NotificationView, showNotification, animate);
         SetActivityVisibility(ClipboardActivityView, showClipboard, animate);
         SetActivityVisibility(CompactView, false, animate);
@@ -190,6 +205,8 @@ public partial class IslandWindow
 
         if (showMedia)
             MediaActivityView.SetExpanded(activity.IsExpanded, animate);
+        if (showTimer)
+            TimerActivityView.SetExpanded(activity.IsExpanded, animate);
 
         if (showNotification)
         {
@@ -204,7 +221,7 @@ public partial class IslandWindow
         }
 
         bool shouldActivate = activity.IsExpanded &&
-            (showMedia || (showClipboard && activity.ClipboardEntry?.Kind == ClipboardEntryKind.Image));
+            (showMedia || showTimer || (showClipboard && activity.ClipboardEntry?.Kind == ClipboardEntryKind.Image));
         if (_model.IsExpanded != shouldActivate)
             _model.IsExpanded = shouldActivate;
 
@@ -291,7 +308,7 @@ public partial class IslandWindow
         }
 
         var activity = _model.IslandActivity;
-        if (activity.Kind == IslandActivityKind.Media)
+        if (activity.Kind is IslandActivityKind.Media or IslandActivityKind.Timer)
         {
             activity.ToggleExpanded();
             e.Handled = true;

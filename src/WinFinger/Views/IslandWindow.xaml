@@ -14,89 +14,44 @@
         SnapsToDevicePixels="True"
         UseLayoutRounding="True"
         Loaded="OnDynamicNotchLoaded">
-
-    <!-- The window is a fixed transparent stage; only IslandBorder animates. -->
     <Grid>
-        <Border x:Name="IslandBorder"
-                HorizontalAlignment="Center" VerticalAlignment="Top"
-                Margin="0,8,0,0"
-                Width="184" Height="34"
-                CornerRadius="17"
-                Background="#01000000"
-                BorderBrush="{StaticResource Brush.GlassRim}"
-                BorderThickness="1.2"
-                Cursor="Hand"
+        <Border x:Name="IslandBorder" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0"
+                Width="184" Height="34" CornerRadius="17" Background="#01000000"
+                BorderBrush="{StaticResource Brush.GlassRim}" BorderThickness="1.2" Cursor="Hand"
                 PreviewMouseLeftButtonDown="OnDynamicIslandPreviewMouseDown"
                 PreviewMouseMove="OnDynamicIslandPreviewMouseMove"
                 PreviewMouseLeftButtonUp="OnDynamicIslandPreviewMouseUp"
-                MouseLeftButtonDown="OnIslandMouseDown"
-                MouseLeftButtonUp="OnIslandClicked"
-                MouseMove="OnIslandMouseMove"
-                MouseEnter="OnIslandMouseEnter"
-                MouseLeave="OnIslandMouseLeave">
-            <Border.Effect>
-                <DropShadowEffect x:Name="IslandShadow" Color="#000000" BlurRadius="32" ShadowDepth="6" Direction="270" Opacity="0.35"/>
-            </Border.Effect>
-
+                MouseLeftButtonDown="OnIslandMouseDown" MouseLeftButtonUp="OnIslandClicked"
+                MouseMove="OnIslandMouseMove" MouseEnter="OnIslandMouseEnter" MouseLeave="OnIslandMouseLeave">
+            <Border.Effect><DropShadowEffect x:Name="IslandShadow" Color="#000000" BlurRadius="32" ShadowDepth="6" Direction="270" Opacity="0.35"/></Border.Effect>
             <Grid ClipToBounds="True">
-                <Border x:Name="GlassLayer" IsHitTestVisible="False"
-                        CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}"
-                        RenderOptions.BitmapScalingMode="Fant">
-                    <Border.Background>
-                        <ImageBrush x:Name="GlassBrush" Stretch="Fill"/>
-                    </Border.Background>
+                <Border x:Name="GlassLayer" IsHitTestVisible="False" CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" RenderOptions.BitmapScalingMode="Fant">
+                    <Border.Background><ImageBrush x:Name="GlassBrush" Stretch="Fill"/></Border.Background>
                 </Border>
-
-                <Border x:Name="ImageDimLayer" IsHitTestVisible="False" Background="#000000" Opacity="0"
-                        CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}"/>
-
-                <Border x:Name="BodyTintLayer" IsHitTestVisible="False" Opacity="1"
-                        Background="{StaticResource Brush.IslandBody}"
-                        CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}"/>
-
-                <Border x:Name="TintLayer" IsHitTestVisible="False" Opacity="0"
-                        CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}">
-                    <Border.Background>
-                        <SolidColorBrush x:Name="TintBrush" Color="#000000"/>
-                    </Border.Background>
-                </Border>
-
-                <Border Background="{StaticResource Brush.TopSheen}"
-                        CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False"/>
+                <Border x:Name="ImageDimLayer" IsHitTestVisible="False" Background="#000000" Opacity="0" CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}"/>
+                <Border x:Name="BodyTintLayer" IsHitTestVisible="False" Opacity="1" Background="{StaticResource Brush.IslandBody}" CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}"/>
+                <Border x:Name="TintLayer" IsHitTestVisible="False" Opacity="0" CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}"><Border.Background><SolidColorBrush x:Name="TintBrush" Color="#000000"/></Border.Background></Border>
+                <Border Background="{StaticResource Brush.TopSheen}" CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False"/>
 
                 <views:CompactIslandView x:Name="CompactView"/>
                 <views:MediaActivityView x:Name="MediaActivityView" Opacity="0" Visibility="Collapsed"/>
+                <views:TimerActivityView x:Name="TimerActivityView" Opacity="0" Visibility="Collapsed"/>
                 <views:ClipboardActivityView x:Name="ClipboardActivityView" Opacity="0" Visibility="Collapsed"/>
                 <views:ExpandedPanelView x:Name="ExpandedView" Opacity="0" Visibility="Collapsed"/>
 
                 <Grid x:Name="NotificationView" Opacity="0" Visibility="Collapsed">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock x:Name="NotificationIcon" FontSize="13" VerticalAlignment="Center" Text="📋"/>
-                        <TextBlock x:Name="NotificationText" Style="{StaticResource Text.Body}" FontSize="12"
-                                   Margin="8,0,0,0" VerticalAlignment="Center" MaxWidth="300"
-                                   TextTrimming="CharacterEllipsis" Text=""/>
+                        <TextBlock x:Name="NotificationText" Style="{StaticResource Text.Body}" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center" MaxWidth="300" TextTrimming="CharacterEllipsis" Text=""/>
                     </StackPanel>
                 </Grid>
 
-                <Border Margin="1" BorderThickness="1" BorderBrush="{StaticResource Brush.GlassInnerEdge}"
-                        CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False"/>
-
-                <Border x:Name="ChromaticLayer" Margin="1.4" BorderThickness="1" BorderBrush="{StaticResource Brush.ChromaticEdge}"
-                        CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False"/>
-
-                <Border x:Name="GlintA" BorderThickness="1.4" BorderBrush="{StaticResource Brush.GlintTopLeft}"
-                        CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False" Opacity="0.2"/>
-                <Border x:Name="GlintB" BorderThickness="1.4" BorderBrush="{StaticResource Brush.GlintBottomRight}"
-                        CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False" Opacity="0.9"/>
-
-                <Border x:Name="SheenBand" Width="150" HorizontalAlignment="Left" Opacity="0"
-                        Background="{StaticResource Brush.SheenSweep}" IsHitTestVisible="False">
-                    <Border.RenderTransform>
-                        <TransformGroup>
-                            <SkewTransform AngleX="-18"/>
-                            <TranslateTransform x:Name="SheenTranslate" X="-200"/>
-                        </TransformGroup>
-                    </Border.RenderTransform>
+                <Border Margin="1" BorderThickness="1" BorderBrush="{StaticResource Brush.GlassInnerEdge}" CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False"/>
+                <Border x:Name="ChromaticLayer" Margin="1.4" BorderThickness="1" BorderBrush="{StaticResource Brush.ChromaticEdge}" CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False"/>
+                <Border x:Name="GlintA" BorderThickness="1.4" BorderBrush="{StaticResource Brush.GlintTopLeft}" CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False" Opacity="0.2"/>
+                <Border x:Name="GlintB" BorderThickness="1.4" BorderBrush="{StaticResource Brush.GlintBottomRight}" CornerRadius="{Binding CornerRadius, ElementName=IslandBorder}" IsHitTestVisible="False" Opacity="0.9"/>
+                <Border x:Name="SheenBand" Width="150" HorizontalAlignment="Left" Opacity="0" Background="{StaticResource Brush.SheenSweep}" IsHitTestVisible="False">
+                    <Border.RenderTransform><TransformGroup><SkewTransform AngleX="-18"/><TranslateTransform x:Name="SheenTranslate" X="-200"/></TransformGroup></Border.RenderTransform>
                 </Border>
             </Grid>
         </Border>

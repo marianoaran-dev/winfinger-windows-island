@@ -7,6 +7,7 @@ public enum IslandActivityKind
 {
     Idle,
     Media,
+    Timer,
     Notification,
     Clipboard
 }
@@ -16,6 +17,8 @@ public readonly record struct IslandGeometry(double Width, double Height, double
     public static readonly IslandGeometry Idle = new(184, 34, 17);
     public static readonly IslandGeometry MediaCompact = new(320, 64, 24);
     public static readonly IslandGeometry MediaExpanded = new(430, 210, 30);
+    public static readonly IslandGeometry TimerCompact = new(300, 64, 24);
+    public static readonly IslandGeometry TimerExpanded = new(380, 180, 28);
     public static readonly IslandGeometry Notification = new(360, 52, 22);
     public static readonly IslandGeometry ClipboardText = new(380, 82, 24);
     public static readonly IslandGeometry ClipboardImage = new(400, 174, 28);
@@ -24,8 +27,8 @@ public readonly record struct IslandGeometry(double Width, double Height, double
 
 /// <summary>
 /// Small presentation coordinator for the DynamicNotch-style shell.
-/// It intentionally owns presentation only; Windows media, clipboard and other
-/// services remain independent and feed activity state into this coordinator.
+/// It intentionally owns presentation only; Windows media, timer, clipboard and
+/// other services remain independent and feed activity state into this coordinator.
 /// </summary>
 public sealed partial class IslandActivityState : ObservableObject
 {
@@ -37,9 +40,11 @@ public sealed partial class IslandActivityState : ObservableObject
 
     private IslandActivityKind _persistentKind = IslandActivityKind.Idle;
     private IslandActivityKind? _lastDismissedKind;
+    private bool _mediaAvailable;
+    private bool _timerActive;
 
     public bool HasTemporaryActivity => Kind is IslandActivityKind.Notification or IslandActivityKind.Clipboard;
-    public bool CanExpand => Kind == IslandActivityKind.Media ||
+    public bool CanExpand => Kind is IslandActivityKind.Media or IslandActivityKind.Timer ||
         (Kind == IslandActivityKind.Clipboard && ClipboardEntry?.Kind == ClipboardEntryKind.Image);
     public bool CanDismiss => Kind != IslandActivityKind.Idle;
     public bool CanRestore => _lastDismissedKind is not null;
@@ -48,6 +53,8 @@ public sealed partial class IslandActivityState : ObservableObject
     {
         IslandActivityKind.Media when IsExpanded => IslandGeometry.MediaExpanded,
         IslandActivityKind.Media => IslandGeometry.MediaCompact,
+        IslandActivityKind.Timer when IsExpanded => IslandGeometry.TimerExpanded,
+        IslandActivityKind.Timer => IslandGeometry.TimerCompact,
         IslandActivityKind.Notification => IslandGeometry.Notification,
         IslandActivityKind.Clipboard when IsExpanded && ClipboardEntry?.Kind == ClipboardEntryKind.Image => IslandGeometry.ClipboardImageExpanded,
         IslandActivityKind.Clipboard when ClipboardEntry?.Kind == ClipboardEntryKind.Image => IslandGeometry.ClipboardImage,
@@ -57,9 +64,14 @@ public sealed partial class IslandActivityState : ObservableObject
 
     public void SetMediaAvailable(bool available)
     {
-        _persistentKind = available ? IslandActivityKind.Media : IslandActivityKind.Idle;
-        if (!HasTemporaryActivity)
-            SetKind(_persistentKind);
+        _mediaAvailable = available;
+        SyncPersistentActivity();
+    }
+
+    public void SetTimerActive(bool active)
+    {
+        _timerActive = active;
+        SyncPersistentActivity();
     }
 
     public void ShowTemporaryNotification(string icon, string text)
@@ -127,12 +139,24 @@ public sealed partial class IslandActivityState : ObservableObject
     {
         if (_lastDismissedKind is not { } restore) return;
         _lastDismissedKind = null;
-
-        if (restore == IslandActivityKind.Media)
-            _persistentKind = IslandActivityKind.Media;
-
+        _persistentKind = restore;
         SetKind(restore);
         OnPropertyChanged(nameof(CanRestore));
+    }
+
+    private void SyncPersistentActivity()
+    {
+        _persistentKind = _timerActive
+            ? IslandActivityKind.Timer
+            : _mediaAvailable
+                ? IslandActivityKind.Media
+                : IslandActivityKind.Idle;
+
+        if (!HasTemporaryActivity)
+        {
+            IsExpanded = false;
+            SetKind(_persistentKind);
+        }
     }
 
     private void SetKind(IslandActivityKind kind)
