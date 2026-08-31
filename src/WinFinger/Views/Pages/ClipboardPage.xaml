@@ -17,10 +17,10 @@
 
         <!-- toolbar -->
         <Grid Grid.Row="0" Margin="2,0,2,8">
-            <TextBlock Style="{StaticResource Text.Title}" Text="剪贴板历史" VerticalAlignment="Center"/>
+            <TextBlock Style="{StaticResource Text.Title}" Text="Clipboard history" VerticalAlignment="Center"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="PauseButton" Style="{StaticResource Button.Ghost}" Content="暂停记录" FontSize="12"/>
-                <Button x:Name="ClearButton" Style="{StaticResource Button.Ghost}" Content="清空" FontSize="12" Margin="4,0,0,0"/>
+                <Button x:Name="PauseButton" Style="{StaticResource Button.Ghost}" Content="Pause" FontSize="12"/>
+                <Button x:Name="ClearButton" Style="{StaticResource Button.Ghost}" Content="Clear" FontSize="12" Margin="4,0,0,0"/>
             </StackPanel>
         </Grid>
 
@@ -68,7 +68,7 @@
                             <Border CornerRadius="8" HorizontalAlignment="Left" ClipToBounds="True"
                                     Cursor="Hand" Background="#01000000"
                                     Tag="{Binding}" MouseLeftButtonUp="OnPreviewImage"
-                                    ToolTip="点击放大查看"
+                                    ToolTip="Click to enlarge"
                                     Visibility="{Binding ImagePath, Converter={StaticResource NullToCollapsed}}">
                                 <Image Source="{Binding ImagePath, Converter={StaticResource Thumbnail}}"
                                        MaxHeight="72" MaxWidth="220" Stretch="Uniform"/>
@@ -84,9 +84,9 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Style="{StaticResource Button.Ghost}" Content="复制" FontSize="11"
+                            <Button Style="{StaticResource Button.Ghost}" Content="Copy" FontSize="11"
                                     Click="OnCopyEntry" Tag="{Binding}"/>
-                            <Button Style="{StaticResource Button.Ghost}" Content="删除" FontSize="11" Margin="2,0,0,0"
+                            <Button Style="{StaticResource Button.Ghost}" Content="Delete" FontSize="11" Margin="2,0,0,0"
                                     Click="OnDeleteEntry" Tag="{Binding}"/>
                         </StackPanel>
                     </Grid>
@@ -96,6 +96,6 @@
 
         <TextBlock x:Name="EmptyHint" Grid.Row="1" Style="{StaticResource Text.Secondary}"
                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                   Text="复制点什么，历史会出现在这里" Visibility="Collapsed"/>
+                   Text="Copy something and it will appear here" Visibility="Collapsed"/>
     </Grid>
 </UserControl>
