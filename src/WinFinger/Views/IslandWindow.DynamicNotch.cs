@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using WinFinger.Controls;
 using WinFinger.ViewModels;
 
 namespace WinFinger.Views;
@@ -71,6 +72,7 @@ public partial class IslandWindow
         {
             ApplyDynamicNotchSurface();
             RenderDynamicActivity(animate: false);
+            ApplyDynamicDemoStateFromEnvironment();
         }));
     }
 
@@ -96,6 +98,35 @@ public partial class IslandWindow
         IslandShadow.ShadowDepth = 5;
     }
 
+    private void ApplyDynamicDemoStateFromEnvironment()
+    {
+        // Deterministic developer harness for visual capture on a real Windows runner/desktop.
+        // Normal launches are untouched. Supported values:
+        // idle, media-compact, media-expanded, notification.
+        string? demo = Environment.GetEnvironmentVariable("WINFINGER_DYNAMICNOTCH_DEMO")?.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(demo)) return;
+
+        switch (demo)
+        {
+            case "idle":
+                _model.IslandActivity.SetMediaAvailable(false);
+                break;
+            case "media-compact":
+                _model.IslandActivity.SetMediaAvailable(true);
+                _model.IslandActivity.Collapse();
+                break;
+            case "media-expanded":
+                _model.IslandActivity.SetMediaAvailable(true);
+                if (!_model.IslandActivity.IsExpanded)
+                    _model.IslandActivity.ToggleExpanded();
+                break;
+            case "notification":
+                _model.IslandActivity.SetMediaAvailable(true);
+                _model.IslandActivity.ShowTemporaryNotification("♪", "Volume 42%");
+                break;
+        }
+    }
+
     private void OnDynamicActivityChanged(object? sender, PropertyChangedEventArgs e)
     {
         // Several coordinator properties can change in one operation (for example
@@ -119,15 +150,22 @@ public partial class IslandWindow
 
         if (animate)
         {
+            // DynamicNotch balanced preset: expansion response 0.45 s, damping 0.75;
+            // normal content transitions sit around a 0.47 s response. WPF's built-in
+            // BackEase is not physically spring-like, so use the same second-order vocabulary.
+            double response = activity.IsExpanded ? 0.45 : 0.47;
+            double durationSeconds = activity.IsExpanded ? 0.68 : 0.72;
             AnimateIsland(
                 geometry.Width,
                 geometry.Height,
                 geometry.CornerRadius,
-                TimeSpan.FromMilliseconds(activity.IsExpanded ? 340 : 260),
-                new BackEase
+                TimeSpan.FromSeconds(durationSeconds),
+                new DampedSpringEase
                 {
-                    EasingMode = EasingMode.EaseOut,
-                    Amplitude = activity.IsExpanded ? 0.24 : 0.18
+                    EasingMode = EasingMode.EaseIn,
+                    ResponseSeconds = response,
+                    DampingFraction = 0.75,
+                    DurationSeconds = durationSeconds
                 });
         }
         else
@@ -194,15 +232,15 @@ public partial class IslandWindow
         {
             element.Visibility = Visibility.Visible;
             element.BeginAnimation(OpacityProperty,
-                new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150))
+                new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(190))
                 {
-                    BeginTime = TimeSpan.FromMilliseconds(70),
+                    BeginTime = TimeSpan.FromMilliseconds(85),
                     EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                 });
         }
         else if (element.Visibility == Visibility.Visible)
         {
-            var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(80));
+            var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(100));
             fade.Completed += (_, _) => element.Visibility = Visibility.Collapsed;
             element.BeginAnimation(OpacityProperty, fade);
         }
@@ -215,7 +253,7 @@ public partial class IslandWindow
         double target = activity.Geometry.Height > IslandGeometry.MediaCompact.Height ? 0.48 : 0.18;
         IslandShadow.BeginAnimation(
             System.Windows.Media.Effects.DropShadowEffect.OpacityProperty,
-            new DoubleAnimation(target, TimeSpan.FromMilliseconds(220)));
+            new DoubleAnimation(target, TimeSpan.FromMilliseconds(260)));
     }
 
     private void OnDynamicIslandPress(object sender, MouseButtonEventArgs e)
@@ -272,8 +310,15 @@ public partial class IslandWindow
 
     private void ReleasePressScale()
     {
-        AnimatePressScale(1, 1, 180,
-            new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.22 });
+        const double duration = 0.42;
+        var spring = new DampedSpringEase
+        {
+            EasingMode = EasingMode.EaseIn,
+            ResponseSeconds = 0.41,
+            DampingFraction = 0.75,
+            DurationSeconds = duration
+        };
+        AnimatePressScale(1, 1, (int)(duration * 1000), spring);
     }
 
     private void OnDynamicNotificationPosted(Services.IslandNotification notification)
