@@ -5,7 +5,7 @@
         <!-- no session -->
         <TextBlock x:Name="EmptyHint" Style="{StaticResource Text.Secondary}"
                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                   Text="没有正在播放的媒体"/>
+                   Text="Nothing is playing"/>
 
         <!-- now playing -->
         <StackPanel x:Name="PlayerPane" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
