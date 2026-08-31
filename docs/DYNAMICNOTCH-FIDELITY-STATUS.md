@@ -31,7 +31,7 @@ Reference interaction inspection confirms vertical swipe-to-dismiss/restore sema
 - WPF transparent/topmost window and desktop positioning.
 - Windows media session integration and transport controls.
 - Album artwork.
-- Clipboard monitoring/history.
+- Clipboard monitoring/history, including text, images and source application metadata.
 - Pomodoro/timer service.
 - Notification plumbing.
 - Tray/settings/autostart.
@@ -41,7 +41,7 @@ Reference interaction inspection confirms vertical swipe-to-dismiss/restore sema
 
 ### Activity presentation model
 
-`IslandActivityState` owns presentation state independently of Windows services. It currently defines idle, media and temporary-notification activities, content-driven geometry, media compact/expanded states, temporary takeover/restoration, dismissal and restoration. Persistent activity state and user-dismissed content are tracked separately, so a temporary notification does not overwrite restore history.
+`IslandActivityState` owns presentation state independently of Windows services. It currently defines idle, media, notification and clipboard activities, content-driven geometry, media compact/expanded states, temporary takeover/restoration, dismissal and restoration. Persistent activity state and user-dismissed content are tracked separately, so temporary notification or clipboard content does not overwrite restore history.
 
 Current target geometries:
 
@@ -49,20 +49,23 @@ Current target geometries:
 - Media compact: 320 x 64, radius 24
 - Media expanded: 430 x 210, radius 30
 - Notification: 360 x 52, radius 22
+- Clipboard text: 380 x 82, radius 24
+- Clipboard image: 400 x 174, radius 28
 
-`AppViewModel` feeds media-session availability into this coordinator while preserving the existing Windows services.
+`AppViewModel` feeds media-session availability into this coordinator while preserving the existing Windows services. Clipboard preview routing has moved out of the old generic notification path and into the dedicated activity shell.
 
 ### Dynamic activity shell
 
 `IslandWindow.DynamicNotch.cs` provides the fidelity presentation without rewriting the large legacy window implementation. It:
 
-- Initialises and renders the dedicated media activity.
+- Initialises and renders the dedicated media and clipboard activities.
 - Makes `IslandActivityState.Geometry` drive width, height and corner radius.
 - Uses an all-black baseline instead of Live Glass, chromatic edges, glints and media tinting.
 - Keeps the old 720 x 480 expanded panel only for unmigrated legacy page commands.
 - Clicks compact media into the dedicated expanded media activity instead of the generic dashboard.
 - Adds top-anchored press compression and spring release.
 - Routes existing WinFinger notifications through `IslandActivityState` so they temporarily take over and automatically restore persistent media.
+- Routes new clipboard entries through the same temporary-activity coordinator, with separate text/image presentation and automatic restoration of the persistent activity.
 - Coalesces multi-property state changes so a temporary takeover does not animate through unintended intermediate states.
 - Adjusts shadow strength based on expanded geometry.
 
@@ -77,15 +80,27 @@ Current target geometries:
 - Media/control buttons are excluded from gesture capture so transport controls remain clickable.
 - During a claimed swipe the island receives interactive translation, horizontal stretch, vertical squash and opacity feedback.
 - Cancelled swipes return with the same damped-spring vocabulary used by the shell.
+- Temporary clipboard/notification dismissal restores the persistent activity without replacing the user's persistent restore history.
 - Horizontal swipe/scroll dismissal, reference-like corner-radius manipulation and blur during the swipe remain future fidelity work.
 
 ### Dedicated media presentation
 
 `MediaActivityView` has separate compact and expanded Now Playing layouts using the existing Windows media session service for title, artist, artwork, play/pause, previous and next. The expanded layout remains a small player surface rather than a five-tab dashboard.
 
-The major functional Now Playing gap is now closed: `MediaService` reads real GSMTC timeline position/duration, listens for timeline changes, refreshes the live position while a session is attached, and uses `TryChangePlaybackPositionAsync` for external seeking. The expanded activity now displays a progress track, seek thumb, elapsed/total time and drag-to-seek interaction. Progress is therefore driven by the active Windows media session rather than a simulated local clock.
+The major functional Now Playing gap is closed: `MediaService` reads real GSMTC timeline position/duration, listens for timeline changes, refreshes the live position while a session is attached, and uses `TryChangePlaybackPositionAsync` for external seeking. The expanded activity displays a progress track, seek thumb, elapsed/total time and drag-to-seek interaction. Progress is therefore driven by the active Windows media session rather than a simulated local clock.
 
 Reference-accurate spacing, artwork proportions and runtime feel still require visual comparison on a real Windows desktop.
+
+### Dedicated clipboard presentation
+
+`ClipboardActivityView` now gives clipboard changes a first-class temporary activity instead of reducing them to a one-line notification.
+
+- Text clipboard entries show a concise content preview plus source application where available.
+- Image clipboard entries use the existing stored `ImagePath` to render an actual thumbnail when the file remains available, with a resilient fallback when it does not.
+- Text and image entries use different content-driven shell geometries.
+- Clipboard activity temporarily suspends media and automatically restores it when its display interval ends.
+- Dismissing clipboard content returns directly to the persistent activity without polluting the media restore slot.
+- Clicking the temporary clipboard activity currently bridges to WinFinger's existing full clipboard-history page. This is intentional compatibility behaviour until expanded clipboard presentation is migrated into the activity engine.
 
 ### Motion fidelity
 
@@ -93,13 +108,13 @@ Reference-accurate spacing, artwork proportions and runtime feel still require v
 
 ### Deterministic verification
 
-A package-free `tests/WinFinger.StateChecks` executable verifies the first presentation sequence:
+A package-free `tests/WinFinger.StateChecks` executable verifies the presentation sequence, including:
 
-idle -> media compact -> media expanded -> temporary notification -> media compact restore -> dismiss -> restore -> idle when media disappears.
+idle -> media compact -> media expanded -> temporary notification -> media restore -> clipboard text takeover -> media restore -> clipboard image takeover -> dismiss temporary clipboard -> media -> dismiss persistent media -> restore -> idle when media disappears.
 
-Windows CI executes this state verifier between build and publish.
+It also checks the distinct clipboard text/image geometries and verifies that dismissing temporary clipboard content does not overwrite persistent restore history. Windows CI executes this verifier between build and publish.
 
-The presentation layer also recognises the developer-only `WINFINGER_DYNAMICNOTCH_DEMO` environment variable with deterministic states: `idle`, `media-compact`, `media-expanded`, and `notification`. This supports repeatable runtime/screenshots on a real Windows desktop without relying on live media or system events.
+The presentation layer recognises the developer-only `WINFINGER_DYNAMICNOTCH_DEMO` environment variable with deterministic states: `idle`, `media-compact`, `media-expanded`, `notification`, `clipboard-text`, and `clipboard-image`. This supports repeatable runtime/screenshots on a real Windows desktop without relying on live media or clipboard/system events.
 
 ## Implementation sequence
 
@@ -128,11 +143,20 @@ The presentation layer also recognises the developer-only `WINFINGER_DYNAMICNOTC
 - [x] Add Windows CI build + self-contained x64 publish workflow.
 - [x] Add deterministic coordinator state checks to CI.
 - [x] Add developer/demo states so visuals do not depend on real media/Bluetooth/battery events.
+- [x] Extend deterministic state checks to clipboard text/image takeover, restoration and dismissal semantics.
 - [ ] Add deterministic screenshot capture or equivalent visual regression path on Windows.
 
 ### Phase D: activity migration/addition
 
-Screenshot, clipboard, timer, charging/battery, Bluetooth, volume, Wi-Fi/VPN, screen recording/downloads where Windows APIs permit equivalent behaviour.
+- [x] First dedicated clipboard text/image preview activity using existing Windows clipboard/image plumbing.
+- [ ] Richer screenshot-specific preview/expansion where Windows capture plumbing supports it.
+- [ ] Expanded clipboard history as a native activity rather than compatibility fallback.
+- [ ] Timer/Pomodoro activity.
+- [ ] Charging/battery activity.
+- [ ] Bluetooth activity.
+- [ ] Volume activity.
+- [ ] Wi-Fi/VPN activity.
+- [ ] Screen recording/download activities where Windows APIs permit equivalent behaviour.
 
 ## Fidelity principles
 
@@ -152,8 +176,9 @@ Screenshot, clipboard, timer, charging/battery, Bluetooth, volume, Wi-Fi/VPN, sc
 - Damped-spring tuning: Windows CI completed successfully.
 - Vertical swipe dismiss/restore + drag arbitration: Windows CI completed successfully.
 - GSMTC timeline/progress/seek integration + expanded-player seek UI: Windows CI run 21 completed successfully through restore, build, state verification and publish for commit `32d0b69`.
+- Dedicated clipboard text/image activity + extended takeover/restore state verification: Windows CI run 29 completed successfully through restore, build, state verification and publish for commit `91533f6`.
 - Physical Windows desktop visual/runtime acceptance: not yet performed.
 
 ## Next implementation task
 
-Now Playing is functionally complete enough to stop expanding the feature surface before visual acceptance. Continue with the first dedicated clipboard/screenshot-style activity using the existing Windows clipboard/image plumbing, keeping temporary activity priority/restoration semantics in the coordinator. In parallel, pursue a deterministic screenshot/visual regression path if it can run meaningfully in Windows CI. Remaining media work is primarily visual tuning plus horizontal swipe/scroll and richer swipe feedback, not missing transport/timeline functionality.
+Build richer screenshot-specific behaviour on top of the now-verified clipboard/image activity, while avoiding duplicate capture plumbing. Determine whether a screenshot should expand from the temporary image preview into a larger focused surface or bridge to existing clipboard history. Continue pursuing a deterministic Windows screenshot/visual-regression path if it can run meaningfully in CI. Remaining media work is primarily visual tuning plus horizontal swipe/scroll and richer swipe feedback, not missing transport/timeline functionality.
