@@ -73,18 +73,6 @@ public sealed partial class AppViewModel : ObservableObject
             Notifications.Post("🍅", phase == Services.PomodoroPhase.Focus ? "Focus complete. Time for a break." : "Break complete. Time to focus.");
             System.Media.SystemSounds.Asterisk.Play();
         };
-        ClipboardStore.Entries.CollectionChanged += (_, e) =>
-        {
-            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && !IsExpanded)
-            {
-                var entry = ClipboardStore.Entries.FirstOrDefault();
-                if (entry is null) return;
-                var preview = entry.Kind == Models.ClipboardEntryKind.Image
-                    ? "Image added to clipboard history"
-                    : Truncate(entry.Text ?? "", 24);
-                Notifications.Post("📋", preview);
-            }
-        };
     }
 
     public void Start()
@@ -103,12 +91,6 @@ public sealed partial class AppViewModel : ObservableObject
         Visualizer.Stop();
         Media.Stop();
         Pomodoro.Pause();
-    }
-
-    private static string Truncate(string text, int max)
-    {
-        var single = text.ReplaceLineEndings(" ").Trim();
-        return single.Length <= max ? single : single[..max] + "…";
     }
 
     public void ToggleExpanded()
