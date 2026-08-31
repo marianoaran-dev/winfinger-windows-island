@@ -39,6 +39,7 @@ var textEntry = new ClipboardEntry(Guid.NewGuid(), ClipboardEntryKind.Text, "Hel
 state.ShowTemporaryClipboard(textEntry);
 Require(state.Kind == IslandActivityKind.Clipboard, "Clipboard text must take over as temporary activity.");
 Require(state.ClipboardEntry == textEntry, "Clipboard activity must retain its entry payload.");
+Require(!state.CanExpand, "Text clipboard preview must remain compact.");
 RequireGeometry(state.Geometry, IslandGeometry.ClipboardText, "Clipboard text geometry");
 
 state.HideTemporaryActivity();
@@ -47,9 +48,18 @@ Require(state.Kind == IslandActivityKind.Media, "Media must restore after clipbo
 var imageEntry = new ClipboardEntry(Guid.NewGuid(), ClipboardEntryKind.Image, null, "demo.png",
     null, "Snipping Tool", DateTime.UtcNow, "image-hash");
 state.ShowTemporaryClipboard(imageEntry);
+Require(state.CanExpand, "Image clipboard preview must support focused expansion.");
 RequireGeometry(state.Geometry, IslandGeometry.ClipboardImage, "Clipboard image geometry");
+state.ToggleExpanded();
+Require(state.IsExpanded, "Image clipboard preview must expand.");
+RequireGeometry(state.Geometry, IslandGeometry.ClipboardImageExpanded, "Expanded clipboard image geometry");
+state.ToggleExpanded();
+Require(!state.IsExpanded, "Image clipboard preview must collapse again.");
+RequireGeometry(state.Geometry, IslandGeometry.ClipboardImage, "Collapsed clipboard image geometry");
+state.ToggleExpanded();
 state.DismissCurrent();
-Require(state.Kind == IslandActivityKind.Media, "Dismissing temporary clipboard content must restore persistent media.");
+Require(state.Kind == IslandActivityKind.Media, "Dismissing expanded temporary clipboard content must restore persistent media.");
+Require(!state.IsExpanded, "Temporary dismissal must clear expanded state.");
 Require(!state.CanRestore, "Temporary clipboard dismissal must not overwrite persistent restore history.");
 
 state.DismissCurrent();

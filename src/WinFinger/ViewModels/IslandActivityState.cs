@@ -19,6 +19,7 @@ public readonly record struct IslandGeometry(double Width, double Height, double
     public static readonly IslandGeometry Notification = new(360, 52, 22);
     public static readonly IslandGeometry ClipboardText = new(380, 82, 24);
     public static readonly IslandGeometry ClipboardImage = new(400, 174, 28);
+    public static readonly IslandGeometry ClipboardImageExpanded = new(440, 300, 30);
 }
 
 /// <summary>
@@ -38,7 +39,8 @@ public sealed partial class IslandActivityState : ObservableObject
     private IslandActivityKind? _lastDismissedKind;
 
     public bool HasTemporaryActivity => Kind is IslandActivityKind.Notification or IslandActivityKind.Clipboard;
-    public bool CanExpand => Kind == IslandActivityKind.Media;
+    public bool CanExpand => Kind == IslandActivityKind.Media ||
+        (Kind == IslandActivityKind.Clipboard && ClipboardEntry?.Kind == ClipboardEntryKind.Image);
     public bool CanDismiss => Kind != IslandActivityKind.Idle;
     public bool CanRestore => _lastDismissedKind is not null;
 
@@ -47,6 +49,7 @@ public sealed partial class IslandActivityState : ObservableObject
         IslandActivityKind.Media when IsExpanded => IslandGeometry.MediaExpanded,
         IslandActivityKind.Media => IslandGeometry.MediaCompact,
         IslandActivityKind.Notification => IslandGeometry.Notification,
+        IslandActivityKind.Clipboard when IsExpanded && ClipboardEntry?.Kind == ClipboardEntryKind.Image => IslandGeometry.ClipboardImageExpanded,
         IslandActivityKind.Clipboard when ClipboardEntry?.Kind == ClipboardEntryKind.Image => IslandGeometry.ClipboardImage,
         IslandActivityKind.Clipboard => IslandGeometry.ClipboardText,
         _ => IslandGeometry.Idle
@@ -80,6 +83,7 @@ public sealed partial class IslandActivityState : ObservableObject
     public void HideTemporaryActivity()
     {
         if (!HasTemporaryActivity) return;
+        IsExpanded = false;
         SetKind(_persistentKind);
     }
 
@@ -136,6 +140,7 @@ public sealed partial class IslandActivityState : ObservableObject
         if (Kind == kind)
         {
             OnPropertyChanged(nameof(Geometry));
+            OnPropertyChanged(nameof(CanExpand));
             return;
         }
 

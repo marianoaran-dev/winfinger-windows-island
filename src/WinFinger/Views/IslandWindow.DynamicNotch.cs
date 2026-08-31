@@ -35,9 +35,6 @@ public partial class IslandWindow
 
         MediaActivityView.Initialize(_model);
 
-        // Replace the legacy fixed-size hover/click behaviour with activity-driven
-        // interaction. Keep the existing mouse-down/move handlers because they own
-        // the useful free-drag implementation; only the click/hover presentation is replaced.
         IslandBorder.MouseLeftButtonUp -= OnIslandClicked;
         IslandBorder.MouseEnter -= OnIslandMouseEnter;
         IslandBorder.MouseLeave -= OnIslandMouseLeave;
@@ -45,14 +42,9 @@ public partial class IslandWindow
         IslandBorder.MouseLeftButtonDown += OnDynamicIslandPress;
         IslandBorder.MouseLeave += OnDynamicIslandMouseLeave;
 
-        // The legacy AppViewModel handler opens the 720x480 dashboard whenever
-        // IsExpanded changes. Replace it with a compatibility handler that only uses
-        // that path when an unmigrated page explicitly requests it.
         _model.PropertyChanged -= OnModelPropertyChanged;
         _model.PropertyChanged += OnDynamicModelPropertyChanged;
 
-        // Notifications and clipboard changes participate in the same activity
-        // coordinator so temporary content can suspend media and restore it cleanly.
         _model.Notifications.NotificationPosted -= OnNotificationPosted;
         _model.Notifications.NotificationPosted += OnDynamicNotificationPosted;
         _model.ClipboardStore.Entries.CollectionChanged += OnDynamicClipboardChanged;
@@ -68,9 +60,6 @@ public partial class IslandWindow
         IslandBorder.RenderTransformOrigin = new Point(0.5, 0);
         IslandBorder.RenderTransform = _pressScale;
 
-        // The fidelity branch deliberately uses DynamicNotch's black surface rather
-        // than WinFinger's glass/chromatic ambience. Queue this after the original
-        // Loaded handler so it wins regardless of event-registration order.
         Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
         {
             ApplyDynamicNotchSurface();
@@ -103,9 +92,6 @@ public partial class IslandWindow
 
     private void ApplyDynamicDemoStateFromEnvironment()
     {
-        // Deterministic developer harness for visual capture on a real Windows runner/desktop.
-        // Normal launches are untouched. Supported values:
-        // idle, media-compact, media-expanded, notification, clipboard-text, clipboard-image.
         string? demo = Environment.GetEnvironmentVariable("WINFINGER_DYNAMICNOTCH_DEMO")?.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(demo)) return;
 
@@ -135,19 +121,19 @@ public partial class IslandWindow
                     null, "Demo app", DateTime.Now, "demo-text"));
                 break;
             case "clipboard-image":
+            case "clipboard-image-expanded":
                 _model.IslandActivity.SetMediaAvailable(true);
                 _model.IslandActivity.ShowTemporaryClipboard(new ClipboardEntry(
                     Guid.NewGuid(), ClipboardEntryKind.Image, null, null,
                     null, "Snipping Tool", DateTime.Now, "demo-image"));
+                if (demo == "clipboard-image-expanded")
+                    _model.IslandActivity.ToggleExpanded();
                 break;
         }
     }
 
     private void OnDynamicActivityChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // Several coordinator properties can change in one operation (for example
-        // expanded -> false followed by media -> notification). Coalesce those into
-        // one render so the shell does not visibly animate through an intermediate state.
         if (_dynamicRenderPending) return;
         _dynamicRenderPending = true;
         Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(() =>
@@ -166,9 +152,6 @@ public partial class IslandWindow
 
         if (animate)
         {
-            // DynamicNotch balanced preset: expansion response 0.45 s, damping 0.75;
-            // normal content transitions sit around a 0.47 s response. WPF's built-in
-            // BackEase is not physically spring-like, so use the same second-order vocabulary.
             double response = activity.IsExpanded ? 0.45 : 0.47;
             double durationSeconds = activity.IsExpanded ? 0.68 : 0.72;
             AnimateIsland(
@@ -201,8 +184,6 @@ public partial class IslandWindow
         SetActivityVisibility(MediaActivityView, showMedia, animate);
         SetActivityVisibility(NotificationView, showNotification, animate);
         SetActivityVisibility(ClipboardActivityView, showClipboard, animate);
-        // Idle is intentionally only the black shell. The old metrics-heavy compact
-        // dashboard is retained in the project but is no longer the fidelity baseline.
         SetActivityVisibility(CompactView, false, animate);
         ExpandedView.Visibility = Visibility.Collapsed;
         ExpandedView.Opacity = 0;
@@ -217,9 +198,13 @@ public partial class IslandWindow
         }
 
         if (showClipboard)
+        {
             ClipboardActivityView.SetEntry(activity.ClipboardEntry);
+            ClipboardActivityView.SetExpanded(activity.IsExpanded, animate);
+        }
 
-        bool shouldActivate = showMedia && activity.IsExpanded;
+        bool shouldActivate = activity.IsExpanded &&
+            (showMedia || (showClipboard && activity.ClipboardEntry?.Kind == ClipboardEntryKind.Image));
         if (_model.IsExpanded != shouldActivate)
             _model.IsExpanded = shouldActivate;
 
@@ -269,8 +254,6 @@ public partial class IslandWindow
 
     private void UpdateDynamicShadow(IslandActivityState activity)
     {
-        // DynamicNotch only develops a pronounced shadow when it grows away from
-        // its base geometry. Keep the compact shell visually attached to the top.
         double target = activity.Geometry.Height > IslandGeometry.MediaCompact.Height ? 0.48 : 0.18;
         IslandShadow.BeginAnimation(
             System.Windows.Media.Effects.DropShadowEffect.OpacityProperty,
@@ -315,11 +298,19 @@ public partial class IslandWindow
         }
         else if (activity.Kind == IslandActivityKind.Clipboard)
         {
-            // Dedicated compact preview is migrated; use the legacy history page as
-            // the deeper destination until clipboard expansion becomes an activity.
-            _activityNotificationTimer.Stop();
-            activity.HideTemporaryActivity();
-            _model.Select(AppPage.Clipboard);
+            if (activity.ClipboardEntry?.Kind == ClipboardEntryKind.Image)
+            {
+                _activityNotificationTimer.Stop();
+                activity.ToggleExpanded();
+                if (!activity.IsExpanded)
+                    _activityNotificationTimer.Start();
+            }
+            else
+            {
+                _activityNotificationTimer.Stop();
+                activity.HideTemporaryActivity();
+                _model.Select(AppPage.Clipboard);
+            }
             e.Handled = true;
         }
         else if (activity.Kind == IslandActivityKind.Idle && activity.CanRestore)
@@ -375,8 +366,6 @@ public partial class IslandWindow
     {
         if (e.PropertyName != nameof(AppViewModel.IsExpanded)) return;
 
-        // Activity expansion is rendered above. IsExpanded can still be set by legacy
-        // tray/page commands; keep those available until each page becomes an activity.
         if (_model.IsExpanded)
         {
             if (_model.IslandActivity.IsExpanded) return;
