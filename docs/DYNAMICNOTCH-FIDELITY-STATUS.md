@@ -11,6 +11,8 @@ Preserve WinFinger's useful Windows integration while replacing its fixed dashbo
 
 DynamicNotch's shell is content-driven rather than a fixed dashboard. The active content supplies compact and expanded views; the shell animates to the presented size. Its engine maintains persistent live activities and temporary notifications, priority ordering, suspension/restoration, dismissal/restoration and queued transitions. The view coordinates size, corner geometry, press scale, shadow, clipping, content opacity/blur and content transitions.
 
+DynamicNotch's balanced animation preset has now also been inspected directly. Its live-activity expansion uses a spring response of about 0.45 s with damping fraction 0.75; normal content/show transitions are around a 0.47 s response. WinFinger now has a damped-harmonic WPF easing function expressed in the same response/damping vocabulary instead of relying only on `BackEase`.
+
 ## First vertical slice acceptance target
 
 1. Idle black capsule.
@@ -22,7 +24,7 @@ DynamicNotch's shell is content-driven rather than a fixed dashboard. The active
 7. Width, height and corner radius morph continuously with spring-like motion.
 8. Content transition is coordinated with shell resizing, with no obvious clipping/jump.
 
-## Existing WinFinger assets to preserve
+## Existing WinFinger assets preserved
 
 - WPF transparent/topmost window and desktop positioning.
 - Windows media session integration and transport controls.
@@ -31,12 +33,13 @@ DynamicNotch's shell is content-driven rather than a fixed dashboard. The active
 - Pomodoro/timer service.
 - Notification plumbing.
 - Tray/settings/autostart.
+- Legacy expanded pages remain available as a compatibility fallback until migrated into activities.
 
 ## Current implementation state
 
 ### Activity presentation model
 
-`IslandActivityState` now owns the first presentation-level activity state independently of Windows services. It defines idle, media and temporary-notification activities, content-driven geometry, media compact/expanded states, temporary takeover/restoration, dismissal and restoration. Current target geometries are intentionally small and reference-like rather than dashboard-sized:
+`IslandActivityState` owns the presentation-level activity state independently of Windows services. It defines idle, media and temporary-notification activities, content-driven geometry, media compact/expanded states, temporary takeover/restoration, dismissal and restoration. Current target geometries are intentionally small and reference-like rather than dashboard-sized:
 
 - Idle: 184 x 34, radius 17
 - Media compact: 320 x 64, radius 24
@@ -45,13 +48,37 @@ DynamicNotch's shell is content-driven rather than a fixed dashboard. The active
 
 `AppViewModel` feeds media-session availability into this coordinator while leaving the existing `MediaService` intact.
 
+### Dynamic activity shell
+
+`IslandWindow.DynamicNotch.cs` now takes over the fidelity presentation without rewriting the large legacy window implementation. It:
+
+- Initialises and renders the dedicated media activity.
+- Makes `IslandActivityState.Geometry` drive width, height and corner radius.
+- Uses an all-black baseline instead of Live Glass, chromatic edges, glints and media tinting.
+- Keeps the old 720 x 480 expanded panel only for unmigrated legacy page commands.
+- Clicks compact media into the dedicated expanded media activity instead of the generic dashboard.
+- Adds top-anchored press compression and spring release.
+- Routes existing WinFinger notifications through `IslandActivityState` so they temporarily take over and automatically restore persistent media.
+- Coalesces multi-property state changes so a temporary takeover does not animate through unintended intermediate states.
+- Adjusts shadow strength based on expanded geometry.
+
 ### Dedicated media presentation
 
-A new `MediaActivityView` exists with separate compact and expanded Now Playing layouts. It uses the existing Windows media service for title, artist, cover art, play/pause, previous and next. The expanded layout is a compact player surface, not the old 720 x 480 five-tab dashboard.
+`MediaActivityView` has separate compact and expanded Now Playing layouts using the existing Windows media service for title, artist, artwork, play/pause, previous and next. The expanded layout remains a small player surface rather than a five-tab dashboard.
 
-The island shell now hosts this media activity view and its baseline XAML geometry has been reduced from the old 300 x 36 pill to the new 184 x 34 idle geometry.
+### Motion fidelity
 
-Important: the new media activity is hosted but not yet switched by `IslandWindow.xaml.cs`; the next step is the integration commit that makes `IslandActivityState` drive shell geometry/content and replaces the legacy expand path for media. Do not claim the vertical slice is runtime-complete yet.
+A new `DampedSpringEase` implements an under-damped second-order response for WPF animation. The shell is now tuned from DynamicNotch's balanced spring values rather than using generic WPF back easing for its main geometry morph. Runtime visual tuning is still required before claiming matching feel/frame pacing.
+
+### Deterministic verification
+
+A package-free `tests/WinFinger.StateChecks` executable verifies the first presentation sequence:
+
+idle -> media compact -> media expanded -> temporary notification -> media compact restore -> dismiss -> restore -> idle when media disappears.
+
+Windows CI now executes this state verifier between build and publish. The CI commit that introduced the state check completed successfully, including build, verifier, publish and artefact upload.
+
+The presentation layer also recognises the developer-only `WINFINGER_DYNAMICNOTCH_DEMO` environment variable with deterministic states: `idle`, `media-compact`, `media-expanded`, and `notification`. This is intended for repeatable screenshots/runtime comparison on a real Windows desktop without requiring live media or system events.
 
 ## Implementation sequence
 
@@ -60,23 +87,25 @@ Important: the new media activity is hosted but not yet switched by `IslandWindo
 - [x] Introduce activity presentation/state model independent of individual Windows services.
 - [x] Centralise first desired geometry and temporary/persistent semantics.
 - [x] Keep current service APIs initially to minimise risk.
-- [ ] Make the shell state renderer consume `IslandActivityState` directly.
-- [ ] Make black the fidelity shell baseline rather than depending on Live Glass.
+- [x] Make the shell state renderer consume `IslandActivityState` directly.
+- [x] Make black the fidelity shell baseline rather than depending on Live Glass.
 
 ### Phase B: Now Playing vertical slice
 
 - [x] Add dedicated compact/expanded media activity view.
 - [x] Bind it to the existing Windows media session service.
-- [ ] Route media activity into the shell and morph to its geometry.
-- [ ] Press compression and coordinated content/shell transition.
-- [ ] Temporary notification suspends/restores media through the coordinator.
-- [ ] Dismiss/restore path wired to interaction.
+- [x] Route media activity into the shell and morph to its geometry.
+- [x] Add press compression and coordinated content/shell transition.
+- [x] Temporary notification suspends/restores media through the coordinator.
+- [ ] Wire a DynamicNotch-style dismiss/restore gesture into interaction (state semantics already exist and are CI-verified).
+- [ ] Add richer expanded-player fidelity such as progress/scrubbing and reference-accurate spacing after runtime visual comparison.
 
 ### Phase C: deterministic verification
 
 - [x] Add Windows CI build + self-contained x64 publish workflow.
-- [ ] Add developer/demo states so visuals do not depend on real media/Bluetooth/battery events.
-- [ ] Add deterministic animation progress or snapshot states where practical.
+- [x] Add deterministic coordinator state checks to CI.
+- [x] Add developer/demo states so visuals do not depend on real media/Bluetooth/battery events.
+- [ ] Add deterministic screenshot capture or equivalent visual regression path on Windows.
 
 ### Phase D: activity migration/addition
 
@@ -94,11 +123,12 @@ Screenshot, clipboard, timer, charging/battery, Bluetooth, volume, Wi-Fi/VPN, sc
 ## Verification state
 
 - Branch isolation: confirmed; `main` and `english-ui` remain untouched.
-- Reference architecture/source inspection: completed for DynamicNotch `NotchEngine` and `NotchView`.
-- Windows CI: workflow is now proven operational. The activity model and AppViewModel integration commits both completed restore/build/publish successfully on `windows-latest`.
-- Media activity/XAML-host commits: CI runs were still executing when this status was updated, so they are not yet marked verified here.
+- Reference architecture/source inspection: completed for DynamicNotch engine, view and balanced animation presets.
+- Dynamic shell integration commit: Windows CI restore/build/publish completed successfully.
+- Coordinator state verifier + CI integration: completed successfully.
+- Latest damped-spring tuning commit: CI is queued/running at this handoff, so it is not yet marked verified.
 - Windows desktop visual/runtime acceptance: not yet performed.
 
 ## Next implementation task
 
-Integrate `IslandActivityState` into `IslandWindow.xaml.cs`: initialise `MediaActivityView`, switch idle/media/notification content from coordinator state, morph to `Geometry`, and make media clicks expand/collapse the dedicated player. Keep the old generic panel path available only for legacy tray/page commands until those features are migrated. Then add press-scale animation and deterministic demo states before moving on to screenshot/clipboard activities.
+First confirm the damped-spring head commit passes Windows CI. Then add a reference-like dismiss/restore gesture without sacrificing a deliberate way to reposition the Windows island. After that, use the deterministic demo states for the first real Windows visual comparison and tune geometry/spacing/motion. If physical desktop access is still unavailable, continue with the next independent activities, preferably screenshot and clipboard because WinFinger already has useful plumbing for both.
