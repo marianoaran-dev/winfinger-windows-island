@@ -49,21 +49,23 @@ public partial class PomodoroPage : UserControl, IIslandPage
         TimeLabel.Text = pomodoro.RemainingText;
         PhaseLabel.Text = pomodoro.Phase switch
         {
-            PomodoroPhase.Focus => pomodoro.IsRunning ? "专注中" : "专注（已暂停）",
-            PomodoroPhase.Break => pomodoro.IsRunning ? "休息中" : "休息（已暂停）",
-            _ => "准备专注"
+            PomodoroPhase.Focus => pomodoro.IsRunning ? "Focusing" : "Focus paused",
+            PomodoroPhase.Break => pomodoro.IsRunning ? "On break" : "Break paused",
+            _ => "Ready to focus"
         };
         TimeLabel.Foreground = pomodoro.Phase == PomodoroPhase.Break
             ? (Brush)FindResource("Brush.Green")
             : (Brush)FindResource("Brush.TextPrimary");
 
-        StartLabel.Text = pomodoro.IsRunning ? "暂停" : pomodoro.Phase == PomodoroPhase.Idle ? "开始专注" : "继续";
+        StartLabel.Text = pomodoro.IsRunning ? "Pause" : pomodoro.Phase == PomodoroPhase.Idle ? "Start focus" : "Resume";
         StartLabel.Foreground = pomodoro.IsRunning
             ? (Brush)FindResource("Brush.Orange")
             : (Brush)FindResource("Brush.Green");
 
-        FocusLabel.Text = $"{pomodoro.FocusMinutes} 分钟";
-        BreakLabel.Text = $"{pomodoro.BreakMinutes} 分钟";
-        StatsLabel.Text = pomodoro.CompletedFocusCount > 0 ? $"今日已完成 {pomodoro.CompletedFocusCount} 个番茄" : "";
+        FocusLabel.Text = $"{pomodoro.FocusMinutes} min";
+        BreakLabel.Text = $"{pomodoro.BreakMinutes} min";
+        StatsLabel.Text = pomodoro.CompletedFocusCount > 0
+            ? $"{pomodoro.CompletedFocusCount} focus session{(pomodoro.CompletedFocusCount == 1 ? "" : "s")} completed today"
+            : "";
     }
 }
