@@ -29,6 +29,7 @@ public sealed partial class AppViewModel : ObservableObject
     public PomodoroService Pomodoro { get; } = new();
     public NotificationService Notifications { get; } = new();
     public SettingsService SettingsStore { get; } = new();
+    public IslandActivityState IslandActivity { get; } = new();
 
     public AppViewModel()
     {
@@ -63,6 +64,9 @@ public sealed partial class AppViewModel : ObservableObject
                 if (Media.IsPlaying) Visualizer.Start();
                 else Visualizer.Stop();
             }
+
+            if (e.PropertyName == nameof(MediaService.HasSession))
+                IslandActivity.SetMediaAvailable(Media.HasSession);
         };
         Pomodoro.PhaseCompleted += phase =>
         {
@@ -107,9 +111,17 @@ public sealed partial class AppViewModel : ObservableObject
         return single.Length <= max ? single : single[..max] + "…";
     }
 
-    public void ToggleExpanded() => IsExpanded = !IsExpanded;
+    public void ToggleExpanded()
+    {
+        IslandActivity.ToggleExpanded();
+        IsExpanded = IslandActivity.IsExpanded;
+    }
 
-    public void Collapse() => IsExpanded = false;
+    public void Collapse()
+    {
+        IslandActivity.Collapse();
+        IsExpanded = false;
+    }
 
     public void Select(AppPage page)
     {
