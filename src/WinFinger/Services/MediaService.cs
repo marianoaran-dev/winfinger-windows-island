@@ -1,12 +1,13 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Windows.Media.Control;
 
 namespace WinFinger.Services;
 
-/// <summary>Global media session (GSMTC): now-playing info, cover art, transport controls.</summary>
+/// <summary>Global media session (GSMTC): now-playing info, cover art, timeline, seeking and transport controls.</summary>
 public sealed partial class MediaService : ObservableObject
 {
     [ObservableProperty] private bool _hasSession;
@@ -15,9 +16,22 @@ public sealed partial class MediaService : ObservableObject
     [ObservableProperty] private string _artist = "";
     [ObservableProperty] private BitmapImage? _cover;
     [ObservableProperty] private System.Windows.Media.Color _accentColor = System.Windows.Media.Color.FromRgb(0x30, 0x30, 0x34);
+    [ObservableProperty] private TimeSpan _position;
+    [ObservableProperty] private TimeSpan _duration;
+    [ObservableProperty] private double _progress;
+    [ObservableProperty] private bool _canSeek;
 
     private GlobalSystemMediaTransportControlsSessionManager? _manager;
     private GlobalSystemMediaTransportControlsSession? _session;
+    private readonly DispatcherTimer _timelineTimer = new()
+    {
+        Interval = TimeSpan.FromMilliseconds(500)
+    };
+
+    public MediaService()
+    {
+        _timelineTimer.Tick += (_, _) => RefreshTimeline();
+    }
 
     public async void Start()
     {
@@ -35,6 +49,7 @@ public sealed partial class MediaService : ObservableObject
 
     public void Stop()
     {
+        _timelineTimer.Stop();
         DetachSession();
         _manager = null;
     }
@@ -75,6 +90,25 @@ public sealed partial class MediaService : ObservableObject
         }
     }
 
+    public async void SeekToFraction(double fraction)
+    {
+        try
+        {
+            if (_session is null || !CanSeek || Duration <= TimeSpan.Zero) return;
+            fraction = Math.Clamp(fraction, 0, 1);
+            long ticks = (long)(Duration.Ticks * fraction);
+            if (await _session.TryChangePlaybackPositionAsync(ticks))
+            {
+                Position = TimeSpan.FromTicks(ticks);
+                UpdateProgress();
+            }
+        }
+        catch
+        {
+            // Some players expose a timeline but reject external seeking.
+        }
+    }
+
     private void AttachSession(GlobalSystemMediaTransportControlsSession? session)
     {
         DetachSession();
@@ -86,21 +120,27 @@ public sealed partial class MediaService : ObservableObject
             Title = "";
             Artist = "";
             Cover = null;
+            ResetTimeline();
             return;
         }
 
         HasSession = true;
         _session.MediaPropertiesChanged += OnMediaPropertiesChanged;
         _session.PlaybackInfoChanged += OnPlaybackInfoChanged;
+        _session.TimelinePropertiesChanged += OnTimelinePropertiesChanged;
         RefreshPlayback();
+        RefreshTimeline();
+        _timelineTimer.Start();
         _ = RefreshPropertiesAsync();
     }
 
     private void DetachSession()
     {
+        _timelineTimer.Stop();
         if (_session is null) return;
         _session.MediaPropertiesChanged -= OnMediaPropertiesChanged;
         _session.PlaybackInfoChanged -= OnPlaybackInfoChanged;
+        _session.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
         _session = null;
     }
 
@@ -109,7 +149,14 @@ public sealed partial class MediaService : ObservableObject
         => OnUi(() => _ = RefreshPropertiesAsync());
 
     private void OnPlaybackInfoChanged(GlobalSystemMediaTransportControlsSession s, PlaybackInfoChangedEventArgs e)
-        => OnUi(RefreshPlayback);
+        => OnUi(() =>
+        {
+            RefreshPlayback();
+            RefreshTimeline();
+        });
+
+    private void OnTimelinePropertiesChanged(GlobalSystemMediaTransportControlsSession s, TimelinePropertiesChangedEventArgs e)
+        => OnUi(RefreshTimeline);
 
     private void RefreshPlayback()
     {
@@ -122,6 +169,58 @@ public sealed partial class MediaService : ObservableObject
         {
             IsPlaying = false;
         }
+    }
+
+    private void RefreshTimeline()
+    {
+        try
+        {
+            if (_session is null)
+            {
+                ResetTimeline();
+                return;
+            }
+
+            var timeline = _session.GetTimelineProperties();
+            var start = timeline.StartTime;
+            var end = timeline.EndTime;
+            var position = timeline.Position;
+            var duration = end - start;
+
+            if (duration <= TimeSpan.Zero)
+            {
+                ResetTimeline();
+                return;
+            }
+
+            var relative = position - start;
+            if (relative < TimeSpan.Zero) relative = TimeSpan.Zero;
+            if (relative > duration) relative = duration;
+
+            Duration = duration;
+            Position = relative;
+            CanSeek = duration > TimeSpan.Zero;
+            UpdateProgress();
+        }
+        catch
+        {
+            ResetTimeline();
+        }
+    }
+
+    private void ResetTimeline()
+    {
+        Position = TimeSpan.Zero;
+        Duration = TimeSpan.Zero;
+        Progress = 0;
+        CanSeek = false;
+    }
+
+    private void UpdateProgress()
+    {
+        Progress = Duration <= TimeSpan.Zero
+            ? 0
+            : Math.Clamp(Position.TotalMilliseconds / Duration.TotalMilliseconds, 0, 1);
     }
 
     private async Task RefreshPropertiesAsync()
