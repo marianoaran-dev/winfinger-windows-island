@@ -1,3 +1,4 @@
+using WinFinger.Models;
 using WinFinger.ViewModels;
 
 static void Require(bool condition, string message)
@@ -32,6 +33,24 @@ state.HideTemporaryNotification();
 Require(state.Kind == IslandActivityKind.Media, "Media must restore after temporary notification ends.");
 Require(!state.IsExpanded, "Restored media should return compact after temporary takeover.");
 RequireGeometry(state.Geometry, IslandGeometry.MediaCompact, "Restored media geometry");
+
+var textEntry = new ClipboardEntry(Guid.NewGuid(), ClipboardEntryKind.Text, "Hello clipboard", null,
+    null, "State check", DateTime.UtcNow, "text-hash");
+state.ShowTemporaryClipboard(textEntry);
+Require(state.Kind == IslandActivityKind.Clipboard, "Clipboard text must take over as temporary activity.");
+Require(state.ClipboardEntry == textEntry, "Clipboard activity must retain its entry payload.");
+RequireGeometry(state.Geometry, IslandGeometry.ClipboardText, "Clipboard text geometry");
+
+state.HideTemporaryActivity();
+Require(state.Kind == IslandActivityKind.Media, "Media must restore after clipboard preview ends.");
+
+var imageEntry = new ClipboardEntry(Guid.NewGuid(), ClipboardEntryKind.Image, null, "demo.png",
+    null, "Snipping Tool", DateTime.UtcNow, "image-hash");
+state.ShowTemporaryClipboard(imageEntry);
+RequireGeometry(state.Geometry, IslandGeometry.ClipboardImage, "Clipboard image geometry");
+state.DismissCurrent();
+Require(state.Kind == IslandActivityKind.Media, "Dismissing temporary clipboard content must restore persistent media.");
+Require(!state.CanRestore, "Temporary clipboard dismissal must not overwrite persistent restore history.");
 
 state.DismissCurrent();
 Require(state.Kind == IslandActivityKind.Idle, "Dismissed media must leave the shell idle.");
