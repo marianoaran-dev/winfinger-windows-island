@@ -66,6 +66,9 @@
                                        TextTrimming="CharacterEllipsis" MaxHeight="40" TextWrapping="Wrap"/>
                             <!-- image entry -->
                             <Border CornerRadius="8" HorizontalAlignment="Left" ClipToBounds="True"
+                                    Cursor="Hand" Background="#01000000"
+                                    Tag="{Binding}" MouseLeftButtonUp="OnPreviewImage"
+                                    ToolTip="点击放大查看"
                                     Visibility="{Binding ImagePath, Converter={StaticResource NullToCollapsed}}">
                                 <Image Source="{Binding ImagePath, Converter={StaticResource Thumbnail}}"
                                        MaxHeight="72" MaxWidth="220" Stretch="Uniform"/>

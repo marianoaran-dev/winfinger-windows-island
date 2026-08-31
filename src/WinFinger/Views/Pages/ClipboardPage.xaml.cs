@@ -42,6 +42,23 @@ public partial class ClipboardPage : UserControl, IIslandPage
             _model.ClipboardMonitor.CopyToClipboard(entry);
     }
 
+    private void OnPreviewImage(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (((FrameworkElement)sender).Tag is not ClipboardEntry entry ||
+            string.IsNullOrEmpty(entry.ImagePath) || !System.IO.File.Exists(entry.ImagePath)) return;
+        e.Handled = true;
+        try
+        {
+            var win = new ImagePreviewWindow(entry.ImagePath);
+            win.Show();
+            win.Activate(); // island is NOACTIVATE; the lightbox needs focus so Esc closes it
+        }
+        catch
+        {
+            // image file unreadable: ignore, thumbnail already hinted at the problem
+        }
+    }
+
     private void OnDeleteEntry(object sender, RoutedEventArgs e)
     {
         if (_model is not null && ((FrameworkElement)sender).Tag is ClipboardEntry entry)
