@@ -4,7 +4,7 @@
     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
 
         <TextBlock x:Name="PhaseLabel" Style="{StaticResource Text.Secondary}"
-                   HorizontalAlignment="Center" Text="准备专注"/>
+                   HorizontalAlignment="Center" Text="Ready to focus"/>
 
         <TextBlock x:Name="TimeLabel" FontFamily="{StaticResource Font.Display}" FontSize="64" FontWeight="Light"
                    Foreground="{StaticResource Brush.TextPrimary}" HorizontalAlignment="Center"
@@ -13,23 +13,23 @@
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
             <Button x:Name="StartButton" Style="{StaticResource Button.Ghost}" Padding="18,9">
                 <TextBlock x:Name="StartLabel" FontSize="13" FontWeight="SemiBold"
-                           Foreground="{StaticResource Brush.Green}" Text="开始专注"/>
+                           Foreground="{StaticResource Brush.Green}" Text="Start focus"/>
             </Button>
-            <Button x:Name="ResetButton" Style="{StaticResource Button.Ghost}" Content="重置" FontSize="13" Margin="8,0,0,0" Padding="18,9"/>
+            <Button x:Name="ResetButton" Style="{StaticResource Button.Ghost}" Content="Reset" FontSize="13" Margin="8,0,0,0" Padding="18,9"/>
         </StackPanel>
 
         <!-- duration settings -->
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,26,0,0">
-            <TextBlock Style="{StaticResource Text.Micro}" VerticalAlignment="Center" Text="专注"/>
+            <TextBlock Style="{StaticResource Text.Micro}" VerticalAlignment="Center" Text="Focus"/>
             <Button x:Name="FocusMinus" Style="{StaticResource Button.Ghost}" Content="−" Margin="6,0,0,0" Padding="8,3"/>
             <TextBlock x:Name="FocusLabel" Style="{StaticResource Text.Body}" VerticalAlignment="Center"
-                       MinWidth="46" TextAlignment="Center" Text="25 分钟"/>
+                       MinWidth="54" TextAlignment="Center" Text="25 min"/>
             <Button x:Name="FocusPlus" Style="{StaticResource Button.Ghost}" Content="＋" Padding="8,3"/>
 
-            <TextBlock Style="{StaticResource Text.Micro}" VerticalAlignment="Center" Margin="18,0,0,0" Text="休息"/>
+            <TextBlock Style="{StaticResource Text.Micro}" VerticalAlignment="Center" Margin="18,0,0,0" Text="Break"/>
             <Button x:Name="BreakMinus" Style="{StaticResource Button.Ghost}" Content="−" Margin="6,0,0,0" Padding="8,3"/>
             <TextBlock x:Name="BreakLabel" Style="{StaticResource Text.Body}" VerticalAlignment="Center"
-                       MinWidth="40" TextAlignment="Center" Text="5 分钟"/>
+                       MinWidth="48" TextAlignment="Center" Text="5 min"/>
             <Button x:Name="BreakPlus" Style="{StaticResource Button.Ghost}" Content="＋" Padding="8,3"/>
         </StackPanel>
 
