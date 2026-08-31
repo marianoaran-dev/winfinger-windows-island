@@ -39,7 +39,7 @@ public partial class AppearanceWindow : Window
         ModeColor.IsChecked = S.BackgroundMode == "color";
         ModeImage.IsChecked = S.BackgroundMode == "image";
         SetHexUi(S.BackgroundColor);
-        ImagePathText.Text = string.IsNullOrEmpty(S.BackgroundImagePath) ? "未选择图片" : S.BackgroundImagePath;
+        ImagePathText.Text = string.IsNullOrEmpty(S.BackgroundImagePath) ? "No image selected" : S.BackgroundImagePath;
         DimSlider.Value = S.ImageDim;
         DarkSlider.Value = S.GlassDarkness;
         GlassSatSlider.Value = S.GlassSaturation;
@@ -125,8 +125,8 @@ public partial class AppearanceWindow : Window
     {
         var dlg = new Microsoft.Win32.OpenFileDialog
         {
-            Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp",
-            Title = "选择岛背景图片"
+            Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.webp",
+            Title = "Choose island background image"
         };
         if (dlg.ShowDialog(this) != true) return;
         S.BackgroundImagePath = dlg.FileName;
