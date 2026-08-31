@@ -69,7 +69,11 @@ public partial class IslandWindow : Window
                 Interval = TimeSpan.FromMilliseconds(160)
             };
             _glassTimer.Tick += (_, _) => CaptureGlass();
-            SetLiveGlass(_model.SettingsStore.Settings.LiveGlassEnabled);
+            // migrate the legacy toggle once: old "off" becomes solid-color mode
+            if (!_model.SettingsStore.Settings.LiveGlassEnabled &&
+                _model.SettingsStore.Settings.BackgroundMode == "glass")
+                _model.SettingsStore.Settings.BackgroundMode = "color";
+            ApplyBackground();
         };
         PreviewKeyDown += OnPreviewKeyDown;
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
@@ -196,19 +200,83 @@ public partial class IslandWindow : Window
         }
     }
 
-    /// <summary>Toggles the live-capture glass (heavier GPU) vs. plain static glass.</summary>
-    public void SetLiveGlass(bool enabled)
+    /// <summary>Applies the configured background mode: live glass, solid color, or custom image.</summary>
+    public void ApplyBackground()
     {
         if (_glassTimer is null) return;
-        GlassLayer.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
-        if (enabled)
+        var s = _model.SettingsStore.Settings;
+        _glassTimer.Stop();
+
+        switch (s.BackgroundMode)
         {
-            _glassTimer.Start();
-            CaptureGlass();
+            case "image" when TryLoadImage(s.BackgroundImagePath, out var img):
+                GlassLayer.Background = new System.Windows.Media.ImageBrush(img)
+                {
+                    Stretch = System.Windows.Media.Stretch.UniformToFill
+                };
+                break;
+            case "color":
+            case "image": // image failed to load: fall back to the solid color
+                GlassLayer.Background = new System.Windows.Media.SolidColorBrush(ParseColor(s.BackgroundColor));
+                break;
+            default: // glass
+                GlassLayer.Background = GlassBrush;
+                if (_glass is not null) _glass.Saturation = s.GlassSaturation;
+                _glassTimer.Start();
+                CaptureGlass();
+                break;
         }
-        else
+        ApplyAppearance();
+    }
+
+    /// <summary>Applies glass darkness and optional light-effect layers.</summary>
+    public void ApplyAppearance()
+    {
+        var s = _model.SettingsStore.Settings;
+        // 0.55 maps to the design-default brush alphas; beyond that, stack extra black on the dim layer
+        double darkness = Math.Clamp(s.GlassDarkness, 0, 1);
+        BodyTintLayer.Opacity = Math.Min(1, darkness / 0.55);
+        double extraDark = Math.Max(0, (darkness - 0.55) / 0.45) * 0.6;
+        double imageDim = s.BackgroundMode == "image" ? Math.Clamp(s.ImageDim, 0, 0.8) : 0;
+        ImageDimLayer.Opacity = Math.Min(0.9, imageDim + extraDark);
+        if (_glass is not null) _glass.Saturation = s.GlassSaturation;
+        ChromaticLayer.Visibility = s.ChromaticEnabled ? Visibility.Visible : Visibility.Collapsed;
+        bool glints = s.GlintEnabled;
+        GlintA.Visibility = glints ? Visibility.Visible : Visibility.Collapsed;
+        GlintB.Visibility = glints ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private static bool TryLoadImage(string path, out System.Windows.Media.Imaging.BitmapImage image)
+    {
+        image = null!;
+        try
         {
-            _glassTimer.Stop();
+            if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path)) return false;
+            var bmp = new System.Windows.Media.Imaging.BitmapImage();
+            bmp.BeginInit();
+            bmp.UriSource = new Uri(path);
+            bmp.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            bmp.DecodePixelWidth = 800;
+            bmp.EndInit();
+            bmp.Freeze();
+            image = bmp;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static System.Windows.Media.Color ParseColor(string hex)
+    {
+        try
+        {
+            return (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+        }
+        catch
+        {
+            return System.Windows.Media.Color.FromRgb(0x1A, 0x1A, 0x22);
         }
     }
 
@@ -216,6 +284,7 @@ public partial class IslandWindow : Window
     private void CaptureGlass()
     {
         if (_glass is null || !IslandBorder.IsLoaded || _ghosted || _morphing) return;
+        if (_model.SettingsStore.Settings.BackgroundMode != "glass") return;
         try
         {
             var topLeft = IslandBorder.PointToScreen(new Point(0, 0));

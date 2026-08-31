@@ -12,7 +12,15 @@ public sealed class AppSettings
     public int PomodoroBreakMinutes { get; set; } = 5;
     public double IslandOffsetX { get; set; }
     public double IslandOffsetY { get; set; }
-    public bool LiveGlassEnabled { get; set; } = true;
+    public bool LiveGlassEnabled { get; set; } = true; // legacy toggle, superseded by BackgroundMode
+    public string BackgroundMode { get; set; } = "glass"; // glass | color | image
+    public string BackgroundColor { get; set; } = "#1A1A22";
+    public string BackgroundImagePath { get; set; } = "";
+    public double ImageDim { get; set; } = 0.3;
+    public double GlassDarkness { get; set; } = 0.55;
+    public double GlassSaturation { get; set; } = 1.6;
+    public bool GlintEnabled { get; set; } = true;
+    public bool ChromaticEnabled { get; set; } = true;
 }
 
 /// <summary>settings.json persistence + the HKCU Run auto-start key.</summary>

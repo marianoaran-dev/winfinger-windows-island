@@ -16,8 +16,10 @@ internal sealed class LiveGlassCapture : IDisposable
 {
     private const int W = 128;
     private const int H = 84;
-    private const double Saturation = 1.6;
     private const int Lift = 14;
+
+    /// <summary>Saturation boost applied to captured frames (user-adjustable).</summary>
+    public double Saturation { get; set; } = 1.6;
 
     private readonly IntPtr _memDc;
     private readonly IntPtr _dib;
@@ -100,15 +102,16 @@ internal sealed class LiveGlassCapture : IDisposable
     }
 
     /// <summary>Saturation boost + brightness lift — the "liquid" look Windows acrylic destroys.</summary>
-    private static void Grade(byte[] buf)
+    private void Grade(byte[] buf)
     {
+        double s = Saturation;
         for (int i = 0; i < buf.Length; i += 4)
         {
             int b = buf[i], g = buf[i + 1], r = buf[i + 2];
             int gray = (r + g + b) / 3;
-            buf[i] = Clamp(gray + (int)((b - gray) * Saturation) + Lift);
-            buf[i + 1] = Clamp(gray + (int)((g - gray) * Saturation) + Lift);
-            buf[i + 2] = Clamp(gray + (int)((r - gray) * Saturation) + Lift);
+            buf[i] = Clamp(gray + (int)((b - gray) * s) + Lift);
+            buf[i + 1] = Clamp(gray + (int)((g - gray) * s) + Lift);
+            buf[i + 2] = Clamp(gray + (int)((r - gray) * s) + Lift);
             buf[i + 3] = 255;
         }
     }

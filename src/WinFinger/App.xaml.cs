@@ -13,6 +13,7 @@ public partial class App : Application
     private bool _ownsMutex;
     private TaskbarIcon? _trayIcon;
     private IslandWindow? _islandWindow;
+    private AppearanceWindow? _appearanceWindow;
 
     public AppViewModel Model { get; } = new();
 
@@ -68,19 +69,40 @@ public partial class App : Application
         clearItem.Click += (_, _) => Model.ClipboardStore.Clear();
         menu.Items.Add(clearItem);
 
-        var glassItem = new System.Windows.Controls.MenuItem
+        var appearanceItem = new System.Windows.Controls.MenuItem { Header = "外观设置…" };
+        appearanceItem.Click += (_, _) => OpenAppearanceWindow();
+        menu.Items.Add(appearanceItem);
+
+        var bgMenu = new System.Windows.Controls.MenuItem { Header = "岛背景" };
+        var bgGlass = new System.Windows.Controls.MenuItem { Header = "动态玻璃" };
+        bgGlass.Click += (_, _) => SetBackground("glass", null);
+        bgMenu.Items.Add(bgGlass);
+        (string name, string hex)[] presets =
         {
-            Header = "动态玻璃背景（较耗性能）",
-            IsCheckable = true,
-            IsChecked = Model.SettingsStore.Settings.LiveGlassEnabled
+            ("经典深灰", "#1A1A22"), ("纯黑", "#0A0A0F"), ("深蓝", "#16283E"),
+            ("深紫", "#1D1440"), ("酒红", "#3D0F14"), ("墨绿", "#0F3324"),
+            ("暖棕", "#33270F"), ("青黛", "#0E3338")
         };
-        glassItem.Click += (_, _) =>
+        foreach (var (name, hex) in presets)
         {
-            Model.SettingsStore.Settings.LiveGlassEnabled = glassItem.IsChecked;
-            Model.SettingsStore.Save();
-            _islandWindow?.SetLiveGlass(glassItem.IsChecked);
+            var item = new System.Windows.Controls.MenuItem { Header = name };
+            item.Click += (_, _) => SetBackground("color", hex);
+            bgMenu.Items.Add(item);
+        }
+        var bgImage = new System.Windows.Controls.MenuItem { Header = "选择图片…" };
+        bgImage.Click += (_, _) =>
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp",
+                Title = "选择岛背景图片"
+            };
+            if (dlg.ShowDialog() != true) return;
+            Model.SettingsStore.Settings.BackgroundImagePath = dlg.FileName;
+            SetBackground("image", null);
         };
-        menu.Items.Add(glassItem);
+        bgMenu.Items.Add(bgImage);
+        menu.Items.Add(bgMenu);
 
         var autoStartItem = new System.Windows.Controls.MenuItem
         {
@@ -104,6 +126,29 @@ public partial class App : Application
             ContextMenu = menu
         };
         _trayIcon.TrayLeftMouseUp += (_, _) => Model.ToggleExpanded();
+    }
+
+    private void SetBackground(string mode, string? color)
+    {
+        var s = Model.SettingsStore.Settings;
+        s.BackgroundMode = mode;
+        if (color is not null) s.BackgroundColor = color;
+        Model.SettingsStore.Save();
+        _islandWindow?.ApplyBackground();
+    }
+
+    private void OpenAppearanceWindow()
+    {
+        if (_appearanceWindow is { IsLoaded: true })
+        {
+            _appearanceWindow.Activate();
+            return;
+        }
+        if (_islandWindow is null) return;
+        _appearanceWindow = new AppearanceWindow(Model, _islandWindow);
+        _appearanceWindow.Closed += (_, _) => _appearanceWindow = null;
+        _appearanceWindow.Show();
+        _appearanceWindow.Activate();
     }
 
     /// <summary>Draws the island pill as a 32x32 tray icon at runtime (no .ico asset needed).</summary>

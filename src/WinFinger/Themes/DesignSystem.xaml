@@ -105,6 +105,20 @@
         <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}"/>
     </Style>
 
+    <Style x:Key="Text.SectionLabel" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource Font.Text}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextSecondary}"/>
+    </Style>
+
+    <Style x:Key="Text.SmallLabel" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource Font.Text}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextTertiary}"/>
+        <Setter Property="Margin" Value="0,8,0,2"/>
+    </Style>
+
     <Style x:Key="Text.Body" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource Font.Text}"/>
         <Setter Property="FontSize" Value="13"/>
