@@ -27,6 +27,7 @@ public sealed partial class AppViewModel : ObservableObject
     public MediaService Media { get; } = new();
     public AudioVisualizerService Visualizer { get; } = new();
     public PomodoroService Pomodoro { get; } = new();
+    public PowerStatusService PowerStatus { get; } = new();
     public NotificationService Notifications { get; } = new();
     public SettingsService SettingsStore { get; } = new();
     public IslandActivityState IslandActivity { get; } = new();
@@ -71,6 +72,44 @@ public sealed partial class AppViewModel : ObservableObject
             if (e.PropertyName == nameof(MediaService.HasSession))
                 IslandActivity.SetMediaAvailable(Media.HasSession);
         };
+        PowerStatus.StatusChanged += change =>
+        {
+            var previous = change.Previous;
+            var current = change.Current;
+
+            bool supplyChanged = previous.PowerSupplyStatus != current.PowerSupplyStatus;
+            bool batteryStateChanged = previous.BatteryStatus != current.BatteryStatus;
+            bool crossedLowThreshold =
+                previous.RemainingChargePercent > 20 && current.RemainingChargePercent <= 20 ||
+                previous.RemainingChargePercent > 10 && current.RemainingChargePercent <= 10;
+
+            if (!supplyChanged && !batteryStateChanged && !crossedLowThreshold)
+                return;
+
+            System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                string icon;
+                string message;
+
+                if (current.IsCharging)
+                {
+                    icon = "⚡";
+                    message = $"Charging · {current.RemainingChargePercent}%";
+                }
+                else if (current.BatteryStatus == Windows.System.Power.BatteryStatus.Discharging)
+                {
+                    icon = current.RemainingChargePercent <= 20 ? "🪫" : "🔋";
+                    message = $"Battery · {current.RemainingChargePercent}%";
+                }
+                else
+                {
+                    icon = "🔋";
+                    message = $"Battery · {current.RemainingChargePercent}%";
+                }
+
+                Notifications.Post(icon, message);
+            });
+        };
         Pomodoro.PhaseCompleted += phase =>
         {
             Notifications.Post("🍅", phase == PomodoroPhase.Focus ? "Focus complete. Time for a break." : "Break complete. Time to focus.");
@@ -84,10 +123,12 @@ public sealed partial class AppViewModel : ObservableObject
         Metrics.Start();
         ForegroundApp.Start();
         Media.Start();
+        PowerStatus.Start();
     }
 
     public void Stop()
     {
+        PowerStatus.Stop();
         Metrics.Stop();
         ForegroundApp.Stop();
         ClipboardMonitor.Detach();
