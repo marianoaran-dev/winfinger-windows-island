@@ -6,7 +6,7 @@ namespace WinFinger.Models;
 /// <summary>A sticky note (field-compatible with mac's notes.json).</summary>
 public sealed class Note : INotifyPropertyChanged
 {
-    private string _title = "未命名便签";
+    private string _title = "Untitled note";
     private string _body = "";
     private bool _isPinned;
     private DateTime _updatedAt = DateTime.Now;
