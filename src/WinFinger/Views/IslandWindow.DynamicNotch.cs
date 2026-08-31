@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
@@ -5,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using WinFinger.Controls;
+using WinFinger.Models;
 using WinFinger.ViewModels;
 
 namespace WinFinger.Views;
@@ -49,14 +51,15 @@ public partial class IslandWindow
         _model.PropertyChanged -= OnModelPropertyChanged;
         _model.PropertyChanged += OnDynamicModelPropertyChanged;
 
-        // Notifications now participate in the same activity coordinator so a
-        // temporary activity can suspend media and automatically restore it.
+        // Notifications and clipboard changes participate in the same activity
+        // coordinator so temporary content can suspend media and restore it cleanly.
         _model.Notifications.NotificationPosted -= OnNotificationPosted;
         _model.Notifications.NotificationPosted += OnDynamicNotificationPosted;
+        _model.ClipboardStore.Entries.CollectionChanged += OnDynamicClipboardChanged;
         _activityNotificationTimer.Tick += (_, _) =>
         {
             _activityNotificationTimer.Stop();
-            _model.IslandActivity.HideTemporaryNotification();
+            _model.IslandActivity.HideTemporaryActivity();
         };
 
         _model.IslandActivity.PropertyChanged += OnDynamicActivityChanged;
@@ -102,7 +105,7 @@ public partial class IslandWindow
     {
         // Deterministic developer harness for visual capture on a real Windows runner/desktop.
         // Normal launches are untouched. Supported values:
-        // idle, media-compact, media-expanded, notification.
+        // idle, media-compact, media-expanded, notification, clipboard-text, clipboard-image.
         string? demo = Environment.GetEnvironmentVariable("WINFINGER_DYNAMICNOTCH_DEMO")?.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(demo)) return;
 
@@ -123,6 +126,19 @@ public partial class IslandWindow
             case "notification":
                 _model.IslandActivity.SetMediaAvailable(true);
                 _model.IslandActivity.ShowTemporaryNotification("♪", "Volume 42%");
+                break;
+            case "clipboard-text":
+                _model.IslandActivity.SetMediaAvailable(true);
+                _model.IslandActivity.ShowTemporaryClipboard(new ClipboardEntry(
+                    Guid.NewGuid(), ClipboardEntryKind.Text,
+                    "Dynamic clipboard preview with content-driven geometry.", null,
+                    null, "Demo app", DateTime.Now, "demo-text"));
+                break;
+            case "clipboard-image":
+                _model.IslandActivity.SetMediaAvailable(true);
+                _model.IslandActivity.ShowTemporaryClipboard(new ClipboardEntry(
+                    Guid.NewGuid(), ClipboardEntryKind.Image, null, null,
+                    null, "Snipping Tool", DateTime.Now, "demo-image"));
                 break;
         }
     }
@@ -180,9 +196,11 @@ public partial class IslandWindow
 
         bool showMedia = activity.Kind == IslandActivityKind.Media;
         bool showNotification = activity.Kind == IslandActivityKind.Notification;
+        bool showClipboard = activity.Kind == IslandActivityKind.Clipboard;
 
         SetActivityVisibility(MediaActivityView, showMedia, animate);
         SetActivityVisibility(NotificationView, showNotification, animate);
+        SetActivityVisibility(ClipboardActivityView, showClipboard, animate);
         // Idle is intentionally only the black shell. The old metrics-heavy compact
         // dashboard is retained in the project but is no longer the fidelity baseline.
         SetActivityVisibility(CompactView, false, animate);
@@ -197,6 +215,9 @@ public partial class IslandWindow
             NotificationIcon.Text = activity.NotificationIcon;
             NotificationText.Text = activity.NotificationText;
         }
+
+        if (showClipboard)
+            ClipboardActivityView.SetEntry(activity.ClipboardEntry);
 
         bool shouldActivate = showMedia && activity.IsExpanded;
         if (_model.IsExpanded != shouldActivate)
@@ -292,6 +313,15 @@ public partial class IslandWindow
             activity.ToggleExpanded();
             e.Handled = true;
         }
+        else if (activity.Kind == IslandActivityKind.Clipboard)
+        {
+            // Dedicated compact preview is migrated; use the legacy history page as
+            // the deeper destination until clipboard expansion becomes an activity.
+            _activityNotificationTimer.Stop();
+            activity.HideTemporaryActivity();
+            _model.Select(AppPage.Clipboard);
+            e.Handled = true;
+        }
         else if (activity.Kind == IslandActivityKind.Idle && activity.CanRestore)
         {
             activity.RestoreLastDismissed();
@@ -325,6 +355,19 @@ public partial class IslandWindow
     {
         _activityNotificationTimer.Stop();
         _model.IslandActivity.ShowTemporaryNotification(notification.Icon, notification.Message);
+        _activityNotificationTimer.Start();
+    }
+
+    private void OnDynamicClipboardChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action != NotifyCollectionChangedAction.Add || _legacyPanelActive)
+            return;
+
+        var entry = _model.ClipboardStore.Entries.FirstOrDefault();
+        if (entry is null) return;
+
+        _activityNotificationTimer.Stop();
+        _model.IslandActivity.ShowTemporaryClipboard(entry);
         _activityNotificationTimer.Start();
     }
 
