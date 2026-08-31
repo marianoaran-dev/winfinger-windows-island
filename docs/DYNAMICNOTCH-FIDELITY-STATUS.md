@@ -32,32 +32,51 @@ DynamicNotch's shell is content-driven rather than a fixed dashboard. The active
 - Notification plumbing.
 - Tray/settings/autostart.
 
-## Current architectural mismatch
+## Current implementation state
 
-`IslandWindow` currently encodes fixed presentation sizes (compact 300x36, expanded 720x480, notification 430 wide, hover 390 wide) and the expanded state opens a large generic panel. This is the primary layer to replace/refactor. Existing Windows services should not be rewritten merely for visual fidelity.
+### Activity presentation model
+
+`IslandActivityState` now owns the first presentation-level activity state independently of Windows services. It defines idle, media and temporary-notification activities, content-driven geometry, media compact/expanded states, temporary takeover/restoration, dismissal and restoration. Current target geometries are intentionally small and reference-like rather than dashboard-sized:
+
+- Idle: 184 x 34, radius 17
+- Media compact: 320 x 64, radius 24
+- Media expanded: 430 x 210, radius 30
+- Notification: 360 x 52, radius 22
+
+`AppViewModel` feeds media-session availability into this coordinator while leaving the existing `MediaService` intact.
+
+### Dedicated media presentation
+
+A new `MediaActivityView` exists with separate compact and expanded Now Playing layouts. It uses the existing Windows media service for title, artist, cover art, play/pause, previous and next. The expanded layout is a compact player surface, not the old 720 x 480 five-tab dashboard.
+
+The island shell now hosts this media activity view and its baseline XAML geometry has been reduced from the old 300 x 36 pill to the new 184 x 34 idle geometry.
+
+Important: the new media activity is hosted but not yet switched by `IslandWindow.xaml.cs`; the next step is the integration commit that makes `IslandActivityState` drive shell geometry/content and replaces the legacy expand path for media. Do not claim the vertical slice is runtime-complete yet.
 
 ## Implementation sequence
 
 ### Phase A: shell and activity contract
 
-- Introduce activity presentation/state model independent of individual Windows services.
-- Centralise desired geometry and priority/temporary/persistent semantics.
-- Keep current service APIs initially to minimise risk.
-- Make black the fidelity shell baseline; do not depend on Live Glass for the target appearance.
+- [x] Introduce activity presentation/state model independent of individual Windows services.
+- [x] Centralise first desired geometry and temporary/persistent semantics.
+- [x] Keep current service APIs initially to minimise risk.
+- [ ] Make the shell state renderer consume `IslandActivityState` directly.
+- [ ] Make black the fidelity shell baseline rather than depending on Live Glass.
 
 ### Phase B: Now Playing vertical slice
 
-- Compact media view matching the reference proportions and hierarchy.
-- Expanded media view matching the reference interaction pattern.
-- Press compression and coordinated content/shell transition.
-- Temporary test activity that suspends and restores media.
-- Dismiss/restore path.
+- [x] Add dedicated compact/expanded media activity view.
+- [x] Bind it to the existing Windows media session service.
+- [ ] Route media activity into the shell and morph to its geometry.
+- [ ] Press compression and coordinated content/shell transition.
+- [ ] Temporary notification suspends/restores media through the coordinator.
+- [ ] Dismiss/restore path wired to interaction.
 
 ### Phase C: deterministic verification
 
-- Add developer/demo states so visuals do not depend on real media/Bluetooth/battery events.
-- Add deterministic animation progress or snapshot states where practical.
-- Windows CI must build the branch before runtime acceptance is claimed.
+- [x] Add Windows CI build + self-contained x64 publish workflow.
+- [ ] Add developer/demo states so visuals do not depend on real media/Bluetooth/battery events.
+- [ ] Add deterministic animation progress or snapshot states where practical.
 
 ### Phase D: activity migration/addition
 
@@ -74,11 +93,12 @@ Screenshot, clipboard, timer, charging/battery, Bluetooth, volume, Wi-Fi/VPN, sc
 
 ## Verification state
 
-- Branch isolation: confirmed, branch created from `english-ui`; `main` and `english-ui` are not modified by this workstream.
+- Branch isolation: confirmed; `main` and `english-ui` remain untouched.
 - Reference architecture/source inspection: completed for DynamicNotch `NotchEngine` and `NotchView`.
-- WinFinger architecture/source inspection: initial pass completed; fixed geometry and existing service inventory confirmed.
-- Windows build/runtime visual acceptance: not yet performed in this workstream.
+- Windows CI: workflow is now proven operational. The activity model and AppViewModel integration commits both completed restore/build/publish successfully on `windows-latest`.
+- Media activity/XAML-host commits: CI runs were still executing when this status was updated, so they are not yet marked verified here.
+- Windows desktop visual/runtime acceptance: not yet performed.
 
 ## Next implementation task
 
-Refactor the presentation state behind `IslandWindow` into a small activity/geometry model without changing the Windows service layer, then wire Now Playing as the first compact/expanded activity. Keep the branch buildable at each commit and add Windows CI before claiming implementation acceptance.
+Integrate `IslandActivityState` into `IslandWindow.xaml.cs`: initialise `MediaActivityView`, switch idle/media/notification content from coordinator state, morph to `Geometry`, and make media clicks expand/collapse the dedicated player. Keep the old generic panel path available only for legacy tray/page commands until those features are migrated. Then add press-scale animation and deterministic demo states before moving on to screenshot/clipboard activities.
