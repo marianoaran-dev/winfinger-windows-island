@@ -86,6 +86,9 @@
                     <TextBlock x:Name="SatLabel" Text="取景饱和度" Style="{StaticResource Text.SmallLabel}"/>
                     <Slider x:Name="GlassSatSlider" Minimum="1.0" Maximum="2.2" ValueChanged="OnTuneChanged"/>
 
+                    <TextBlock Text="闲置淡出透明度（1 = 不淡出）" Style="{StaticResource Text.SmallLabel}"/>
+                    <Slider x:Name="GhostSlider" Minimum="0.1" Maximum="1.0" ValueChanged="OnTuneChanged"/>
+
                     <TextBlock Text="光效" Style="{StaticResource Text.SectionLabel}" Margin="0,14,0,0"/>
                     <CheckBox x:Name="GlintCheck" Content="呼吸边缘光" Margin="0,6,0,2"
                               Foreground="{StaticResource Brush.TextPrimary}" Checked="OnTuneChanged" Unchecked="OnTuneChanged"/>

@@ -43,6 +43,7 @@ public partial class AppearanceWindow : Window
         DimSlider.Value = S.ImageDim;
         DarkSlider.Value = S.GlassDarkness;
         GlassSatSlider.Value = S.GlassSaturation;
+        GhostSlider.Value = S.GhostOpacity;
         GlintCheck.IsChecked = S.GlintEnabled;
         ChromaCheck.IsChecked = S.ChromaticEnabled;
         UpdatePanelVisibility();
@@ -140,6 +141,7 @@ public partial class AppearanceWindow : Window
         S.ImageDim = DimSlider.Value;
         S.GlassDarkness = DarkSlider.Value;
         S.GlassSaturation = GlassSatSlider.Value;
+        S.GhostOpacity = GhostSlider.Value;
         S.GlintEnabled = GlintCheck.IsChecked == true;
         S.ChromaticEnabled = ChromaCheck.IsChecked == true;
         SaveAndApply();
@@ -153,6 +155,7 @@ public partial class AppearanceWindow : Window
         S.ImageDim = 0.3;
         S.GlassDarkness = 0.55;
         S.GlassSaturation = 1.6;
+        S.GhostOpacity = 0.4;
         S.GlintEnabled = true;
         S.ChromaticEnabled = true;
         LoadFromSettings();

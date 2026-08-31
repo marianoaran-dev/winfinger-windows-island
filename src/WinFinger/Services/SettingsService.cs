@@ -19,6 +19,7 @@ public sealed class AppSettings
     public double ImageDim { get; set; } = 0.3;
     public double GlassDarkness { get; set; } = 0.55;
     public double GlassSaturation { get; set; } = 1.6;
+    public double GhostOpacity { get; set; } = 0.4;
     public bool GlintEnabled { get; set; } = true;
     public bool ChromaticEnabled { get; set; } = true;
 }

@@ -179,22 +179,26 @@ public partial class IslandWindow : Window
         int style = NativeMethods.GetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE);
         style = ghosted ? style | NativeMethods.WS_EX_TRANSPARENT : style & ~NativeMethods.WS_EX_TRANSPARENT;
         NativeMethods.SetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE, style);
+        double ghostOpacity = Math.Clamp(_model.SettingsStore.Settings.GhostOpacity, 0.1, 1.0);
         IslandBorder.BeginAnimation(OpacityProperty,
-            new DoubleAnimation(ghosted ? 0.4 : 1.0, TimeSpan.FromMilliseconds(260))
+            new DoubleAnimation(ghosted ? ghostOpacity : 1.0, TimeSpan.FromMilliseconds(260))
             {
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             });
 
-        // faded island doesn't need ambience: stop all recurring animation while ghosted
+        // faded island doesn't need ambience: stop all recurring animation while ghosted,
+        // but keep a slow glass refresh so the background never goes stale behind a new scene
         if (ghosted)
         {
             GlintA.BeginAnimation(OpacityProperty, null);
             GlintB.BeginAnimation(OpacityProperty, null);
             GlintA.Opacity = 0.3;
             GlintB.Opacity = 0.3;
+            if (_glassTimer is not null) _glassTimer.Interval = TimeSpan.FromMilliseconds(1200);
         }
         else
         {
+            if (_glassTimer is not null) _glassTimer.Interval = TimeSpan.FromMilliseconds(160);
             StartGlintBreathing();
             CaptureGlass();
         }
@@ -244,6 +248,10 @@ public partial class IslandWindow : Window
         bool glints = s.GlintEnabled;
         GlintA.Visibility = glints ? Visibility.Visible : Visibility.Collapsed;
         GlintB.Visibility = glints ? Visibility.Visible : Visibility.Collapsed;
+        // if the island is currently ghosted, reflect a changed fade opacity immediately
+        if (_ghosted)
+            IslandBorder.BeginAnimation(OpacityProperty,
+                new DoubleAnimation(Math.Clamp(s.GhostOpacity, 0.1, 1.0), TimeSpan.FromMilliseconds(200)));
     }
 
     private static bool TryLoadImage(string path, out System.Windows.Media.Imaging.BitmapImage image)
@@ -283,7 +291,7 @@ public partial class IslandWindow : Window
     /// <summary>One glass frame: grab what's behind IslandBorder (device px) into the ImageBrush.</summary>
     private void CaptureGlass()
     {
-        if (_glass is null || !IslandBorder.IsLoaded || _ghosted || _morphing) return;
+        if (_glass is null || !IslandBorder.IsLoaded || _morphing) return;
         if (_model.SettingsStore.Settings.BackgroundMode != "glass") return;
         try
         {
