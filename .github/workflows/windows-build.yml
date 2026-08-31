@@ -24,6 +24,9 @@ jobs:
       - name: Build
         run: dotnet build WinFinger.sln --configuration Release --no-restore
 
+      - name: Verify DynamicNotch activity state
+        run: dotnet run --project tests/WinFinger.StateChecks/WinFinger.StateChecks.csproj --configuration Release
+
       - name: Publish x64
         run: dotnet publish src/WinFinger/WinFinger.csproj --configuration Release --runtime win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --output artifacts/win-x64
 
